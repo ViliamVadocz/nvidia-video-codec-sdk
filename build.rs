@@ -13,12 +13,7 @@ const NVENC_LIB: &str = "nvidia-encode";
 const NVDEC_LIB: &str = "nvcuvid";
 
 // Taken from https://github.com/coreylowman/cudarc/blob/main/build.rs
-const CUDA_ROOT_ENV_VARS: [&str; 4] = [
-    "CUDA_PATH",
-    "CUDA_ROOT",
-    "CUDA_TOOLKIT_ROOT_DIR",
-    "NVIDIA_VIDEO_CODEC_SDK_PATH",
-];
+const CUDA_ROOT_ENV_VARS: [&str; 3] = ["CUDA_PATH", "CUDA_ROOT", "CUDA_TOOLKIT_ROOT_DIR"];
 const CUDA_ROOT_CANDIDATES: [&str; 6] = [
     "/usr",
     "/usr/local/cuda",
@@ -42,9 +37,18 @@ const LIBRARY_CANDIDATES: [&str; 10] = [
 
 fn main() {
     rerun_if_changed();
-    add_directories_to_library_search_path();
-    link_to_libraries();
-    generate_bindings();
+    let cuda_root = find_cuda_root()
+        .canonicalize()
+        .expect("Could not canonicalize path.");
+
+    println!("cargo:rustc-link-lib={NVENC_LIB}");
+    println!("cargo:rustc-link-lib={NVDEC_LIB}");
+
+    for path in lib_candidates(cuda_root.clone()) {
+        println!("cargo:rustc-link-search={}", path.display());
+    }
+
+    generate_bindings(cuda_root);
 }
 
 fn rerun_if_changed() {
@@ -54,49 +58,7 @@ fn rerun_if_changed() {
     println!("cargo:rerun-if-changed=wrapper.h",);
 }
 
-fn add_directories_to_library_search_path() {
-    let roots = root_candidates().filter(|path| {
-        let join_include = path.join("include");
-        join_include.join("cuviddec.h").is_file()
-            || join_include.join("nvcuvid.h").is_file()
-            || join_include.join("nvEncodeAPI.h").is_file()
-    });
-
-    let mut at_least_one = false;
-    for path in roots.flat_map(lib_candidates) {
-        let Ok(canonical) = path.canonicalize() else { continue };
-        println!("cargo:rustc-link-search={}", canonical.display());
-        at_least_one = true;
-    }
-    if !at_least_one {
-        eprintln!(
-            "Could not find the required headers.\n\
-            Set the `NVIDIA_VIDEO_CODEC_SDK_PATH` environment variable\n\
-            so that the headers are at `$NVIDIA_VIDEO_CODEC_SDK_PATH/include/`.\n\
-            Make sure the libraries are at `$NVIDIA_VIDEO_CODEC_SDK_PATH/lib/`.\n"
-        );
-    }
-}
-
-fn link_to_libraries() {
-    println!("cargo:rustc-link-lib={NVENC_LIB}");
-    println!("cargo:rustc-link-lib={NVDEC_LIB}");
-}
-
-fn generate_bindings() {
-    let bindings = bindgen::Builder::default()
-        .header("wrapper.h")
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        .generate()
-        .expect("Unable to generate bindings");
-
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    bindings
-        .write_to_file(out_path.join("bindings.rs"))
-        .expect("Could not write bindings");
-}
-
-fn root_candidates() -> impl Iterator<Item = PathBuf> {
+fn cuda_root_candidates() -> impl Iterator<Item = PathBuf> {
     let env_vars = CUDA_ROOT_ENV_VARS
         .into_iter()
         .map(std::env::var)
@@ -110,4 +72,42 @@ fn lib_candidates(root: PathBuf) -> impl Iterator<Item = PathBuf> {
         .into_iter()
         .map(move |p| root.join(p))
         .filter(|p| p.is_dir())
+}
+
+/// We expect both `cuda.h` and all the NVIDIA Video Codec SDK headers to be in the same place.
+fn find_cuda_root() -> PathBuf {
+    let root = cuda_root_candidates()
+        .find(|path| path.join("include").join("cuda.h").is_file())
+        .unwrap_or_else(|| {
+            panic!(
+                "Could not find the CUDA header file `cuda.h`.\n\
+                Try setting `CUDA_PATH` so that the header is located at `$CUDA_PATH/include/cuda.h`.\n"
+            )
+        });
+    assert!(
+        {
+            let include = root.join("include");
+            include.join("cuviddec.h").is_file()
+                && include.join("nvcuvid.h").is_file()
+                && include.join("nvEncodeAPI.h").is_file()
+        },
+        "Could not find the required NVIDIA Video Codec SDK headers.\n\
+        Place the headers at the same location as your CUDA headers.\n\
+        That means the headers are at located at `$CUDA_PATH/include/`."
+    );
+    root
+}
+
+fn generate_bindings(cuda_root: PathBuf) {
+    let bindings = bindgen::Builder::default()
+        .header("wrapper.h")
+        .clang_arg(format!("-I{}", cuda_root.join("include").display()))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .generate()
+        .expect("Unable to generate bindings");
+
+    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
+    bindings
+        .write_to_file(out_path.join("bindings.rs"))
+        .expect("Could not write bindings");
 }
