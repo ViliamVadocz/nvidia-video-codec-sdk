@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 // https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#basic-encoding-flow
 #[cfg(target_os = "windows")]
-const NVENC_LIB: &str = "nvEncode";
+const NVENC_LIB: &str = "nvencodeapi";
 #[cfg(target_os = "linux")]
 const NVENC_LIB: &str = "nvidia-encode";
 
@@ -103,6 +103,12 @@ fn generate_bindings(cuda_root: PathBuf) {
         .header("wrapper.h")
         .clang_arg(format!("-I{}", cuda_root.join("include").display()))
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        // Windows compatibility https://github.com/rust-lang/rust-bindgen/issues/1562#issuecomment-851038587
+        .blocklist_type("_IMAGE_TLS_DIRECTORY64")
+        .blocklist_type("IMAGE_TLS_DIRECTORY64")
+        .blocklist_type("PIMAGE_TLS_DIRECTORY64")
+        .blocklist_type("IMAGE_TLS_DIRECTORY")
+        .blocklist_type("PIMAGE_TLS_DIRECTORY")
         .generate()
         .expect("Unable to generate bindings");
 
