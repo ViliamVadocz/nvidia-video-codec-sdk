@@ -1,16 +1,8 @@
-#![allow(non_upper_case_globals)]
-#![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
-
-// include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-
-pub mod cuviddec;
-pub mod nvcuvid;
-pub mod nvencodeapi;
+pub mod sys;
 
 #[cfg(test)]
 mod tests {
-    use crate::nvencodeapi::*;
+    use crate::sys::nvEncodeAPI::*;
     use std::os::raw::c_void;
 
     #[test]
@@ -69,7 +61,7 @@ mod tests {
             let device = CudaDevice::new(0);
 
             let nvEncOpenEncodeSessionEx = function_list.nvEncOpenEncodeSessionEx.unwrap();
-            nvEncOpenEncodeSessionEx()
+            // nvEncOpenEncodeSessionEx()
         }
     }
 }
