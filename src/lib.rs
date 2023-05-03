@@ -1,16 +1,21 @@
 pub mod sys;
 
+pub fn NVENCAPI_STRUCT_VERSION(ver: i32) -> i32 {
+    use crate::nvEncodeAPI::NVENCAPI_VERSION;
+    (NVENCAPI_VERSION | ((ver) << 16) | (0x7 << 28))
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::sys::nvEncodeAPI::*;
-    use std::os::raw::c_void;
+    use crate::{sys::nvEncodeAPI::*, NVENCAPI_STRUCT_VERSION};
+    use cudarc::driver::sys::*;
+    use std::{ffi::c_int, ffi::{c_void, c_char, c_uint}};
 
     #[test]
     fn example() {
-        let ver = 2;
         unsafe {
             let mut function_list = NV_ENCODE_API_FUNCTION_LIST {
-                version: (NVENCAPI_VERSION | ((ver) << 16) | (0x7 << 28)),
+                version: NVENCAPI_STRUCT_VERSION(2),
                 reserved: 0,
                 nvEncOpenEncodeSession: PNVENCOPENENCODESESSION::None,
                 nvEncGetEncodeGUIDCount: PNVENCGETENCODEGUIDCOUNT::None,
@@ -56,12 +61,43 @@ mod tests {
                 reserved2: [std::ptr::null::<c_void>() as *mut c_void; 277],
             };
 
+            cuInit(0);
+            let mut nGpu = 0;
+            let iGpu = 0;
+            cuDeviceGetCount(&mut nGpu as *mut c_int);
+            let mut cuDevice = 0;
+            cuDeviceGet(&mut cuDevice as CUdevice, iGpu as c_int);
+            let mut szDeviceName: [c_char; 80];
+            cuDeviceGetName(&mut szDeviceName as *mut c_char, szDeviceName.len() as c_int, cuDevice as CUdevice);
+            let mut cuContext = std::ptr::null::<c_void>();
+            cuCtxCreate_v2(&mut cuContext as *mut CUcontext, 0 as c_uint, cuDevice as CUdevice);
+            
+            
+
             NvEncodeAPICreateInstance(&mut function_list as *mut NV_ENCODE_API_FUNCTION_LIST);
 
-            let device = CudaDevice::new(0);
+            use crate::nvEncodeAPI::NVENCAPI_VERSION; //TODO check with will if it can go inside
+
+            let session_params = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS {
+                version: NVENCAPI_STRUCT_VERSION(1),
+                deviceType: NV_ENC_DEVICE_TYPE::NV_ENC_DEVICE_TYPE_CUDA,
+                apiVersion: nvEncodeAPI::NVENCAPI_VERSION,
+                device,
+                reserved: 0,
+                reserved1: 0,
+                reserved2: [std::ptr::null::<c_void>() as *mut c_void; 64],
+            };
 
             let nvEncOpenEncodeSessionEx = function_list.nvEncOpenEncodeSessionEx.unwrap();
-            // nvEncOpenEncodeSessionEx()
+            let status = nvEncOpenEncodeSessionEx(&mut session_params as *mut _NV_ENC_OPEN_ENCODE_SESSIONEX_PARAMS, &mut cuContext as *mut *mut c_void);
+
+            if status != _NVENCSTATUS::NV_ENC_SUCCESS {
+                //If the creation of encoder session fails, the client must call ::NvEncDestroyEncoder API before exiting.
+            }
+
+            let nvEncGetEncodeGUIDCount = function_list.nvEncGetEncodeGUIDCount.unwrap();
+            let mut supportedGuidsCount:u32 = 0;
+            let _res = nvEncGetEncodeGUIDCount(&mut function_list as *mut c_void, &mut supportedGuidsCount as *mut u32);
         }
     }
 }
