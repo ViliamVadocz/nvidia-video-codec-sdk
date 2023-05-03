@@ -48,7 +48,7 @@ fn main() {
         println!("cargo:rustc-link-search={}", path.display());
     }
 
-    generate_bindings(cuda_root);
+    // generate_bindings(cuda_root);
 }
 
 fn rerun_if_changed() {
