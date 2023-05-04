@@ -19,7 +19,9 @@ bindgen \
     --with-derive-ord \
     --use-core \
     --merge-extern-blocks \
+    --sort-semantically \
     --output cuviddec.rs ./headers/cuviddec.h
+
 bindgen \
     --allowlist-type CU.* \
     --allowlist-type cudaVideo.* \
@@ -40,7 +42,9 @@ bindgen \
     --with-derive-ord \
     --use-core \
     --merge-extern-blocks \
+    --sort-semantically \
     --output nvcuvid.rs ./headers/nvcuvid.h
+
 bindgen \
     --allowlist-type NVENC.* \
     --allowlist-type NV_ENC.* \
@@ -66,4 +70,5 @@ bindgen \
     --with-derive-ord \
     --use-core \
     --merge-extern-blocks \
+    --sort-semantically \
     --output nvEncodeAPI.rs ./headers/nvEncodeAPI.h
