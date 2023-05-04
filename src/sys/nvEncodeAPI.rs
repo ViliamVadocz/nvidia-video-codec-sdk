@@ -80,6 +80,13 @@ where
         }
     }
 }
+pub const NVENCAPI_MAJOR_VERSION: u32 = 12;
+pub const NVENCAPI_MINOR_VERSION: u32 = 0;
+pub const NVENCAPI_VERSION: u32 = 12;
+pub const NVENC_INFINITE_GOPLENGTH: u32 = 4294967295;
+pub const NV_MAX_SEQ_HDR_LEN: u32 = 512;
+pub const NV_MAX_TILE_COLS_AV1: u32 = 64;
+pub const NV_MAX_TILE_ROWS_AV1: u32 = 64;
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct _GUID {
@@ -10554,26 +10561,62 @@ impl Default for _NV_ENCODE_API_FUNCTION_LIST {
 }
 pub type NV_ENCODE_API_FUNCTION_LIST = _NV_ENCODE_API_FUNCTION_LIST;
 extern "C" {
+    pub static NV_ENC_CODEC_H264_GUID: GUID;
+    pub static NV_ENC_CODEC_HEVC_GUID: GUID;
+    pub static NV_ENC_CODEC_AV1_GUID: GUID;
+    pub static NV_ENC_CODEC_PROFILE_AUTOSELECT_GUID: GUID;
+    pub static NV_ENC_H264_PROFILE_BASELINE_GUID: GUID;
+    pub static NV_ENC_H264_PROFILE_MAIN_GUID: GUID;
+    pub static NV_ENC_H264_PROFILE_HIGH_GUID: GUID;
+    pub static NV_ENC_H264_PROFILE_HIGH_444_GUID: GUID;
+    pub static NV_ENC_H264_PROFILE_STEREO_GUID: GUID;
+    pub static NV_ENC_H264_PROFILE_PROGRESSIVE_HIGH_GUID: GUID;
+    pub static NV_ENC_H264_PROFILE_CONSTRAINED_HIGH_GUID: GUID;
+    pub static NV_ENC_HEVC_PROFILE_MAIN_GUID: GUID;
+    pub static NV_ENC_HEVC_PROFILE_MAIN10_GUID: GUID;
+    pub static NV_ENC_HEVC_PROFILE_FREXT_GUID: GUID;
+    pub static NV_ENC_AV1_PROFILE_MAIN_GUID: GUID;
+    pub static NV_ENC_PRESET_DEFAULT_GUID: GUID;
+    pub static NV_ENC_PRESET_HP_GUID: GUID;
+    pub static NV_ENC_PRESET_HQ_GUID: GUID;
+    pub static NV_ENC_PRESET_BD_GUID: GUID;
+    pub static NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID: GUID;
+    pub static NV_ENC_PRESET_LOW_LATENCY_HQ_GUID: GUID;
+    pub static NV_ENC_PRESET_LOW_LATENCY_HP_GUID: GUID;
+    pub static NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID: GUID;
+    pub static NV_ENC_PRESET_LOSSLESS_HP_GUID: GUID;
+    pub static NV_ENC_PRESET_P1_GUID: GUID;
+    pub static NV_ENC_PRESET_P2_GUID: GUID;
+    pub static NV_ENC_PRESET_P3_GUID: GUID;
+    pub static NV_ENC_PRESET_P4_GUID: GUID;
+    pub static NV_ENC_PRESET_P5_GUID: GUID;
+    pub static NV_ENC_PRESET_P6_GUID: GUID;
+    pub static NV_ENC_PRESET_P7_GUID: GUID;
+    #[must_use]
     pub fn NvEncOpenEncodeSession(
         device: *mut ::core::ffi::c_void,
         deviceType: u32,
         encoder: *mut *mut ::core::ffi::c_void,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetEncodeGUIDCount(
         encoder: *mut ::core::ffi::c_void,
         encodeGUIDCount: *mut u32,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetEncodeGUIDs(
         encoder: *mut ::core::ffi::c_void,
         GUIDs: *mut GUID,
         guidArraySize: u32,
         GUIDCount: *mut u32,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetEncodeProfileGUIDCount(
         encoder: *mut ::core::ffi::c_void,
         encodeGUID: GUID,
         encodeProfileGUIDCount: *mut u32,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetEncodeProfileGUIDs(
         encoder: *mut ::core::ffi::c_void,
         encodeGUID: GUID,
@@ -10581,11 +10624,13 @@ extern "C" {
         guidArraySize: u32,
         GUIDCount: *mut u32,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetInputFormatCount(
         encoder: *mut ::core::ffi::c_void,
         encodeGUID: GUID,
         inputFmtCount: *mut u32,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetInputFormats(
         encoder: *mut ::core::ffi::c_void,
         encodeGUID: GUID,
@@ -10593,17 +10638,20 @@ extern "C" {
         inputFmtArraySize: u32,
         inputFmtCount: *mut u32,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetEncodeCaps(
         encoder: *mut ::core::ffi::c_void,
         encodeGUID: GUID,
         capsParam: *mut NV_ENC_CAPS_PARAM,
         capsVal: *mut ::core::ffi::c_int,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetEncodePresetCount(
         encoder: *mut ::core::ffi::c_void,
         encodeGUID: GUID,
         encodePresetGUIDCount: *mut u32,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetEncodePresetGUIDs(
         encoder: *mut ::core::ffi::c_void,
         encodeGUID: GUID,
@@ -10611,12 +10659,14 @@ extern "C" {
         guidArraySize: u32,
         encodePresetGUIDCount: *mut u32,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetEncodePresetConfig(
         encoder: *mut ::core::ffi::c_void,
         encodeGUID: GUID,
         presetGUID: GUID,
         presetConfig: *mut NV_ENC_PRESET_CONFIG,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetEncodePresetConfigEx(
         encoder: *mut ::core::ffi::c_void,
         encodeGUID: GUID,
@@ -10624,116 +10674,145 @@ extern "C" {
         tuningInfo: NV_ENC_TUNING_INFO,
         presetConfig: *mut NV_ENC_PRESET_CONFIG,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncInitializeEncoder(
         encoder: *mut ::core::ffi::c_void,
         createEncodeParams: *mut NV_ENC_INITIALIZE_PARAMS,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncCreateInputBuffer(
         encoder: *mut ::core::ffi::c_void,
         createInputBufferParams: *mut NV_ENC_CREATE_INPUT_BUFFER,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncDestroyInputBuffer(
         encoder: *mut ::core::ffi::c_void,
         inputBuffer: NV_ENC_INPUT_PTR,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncSetIOCudaStreams(
         encoder: *mut ::core::ffi::c_void,
         inputStream: NV_ENC_CUSTREAM_PTR,
         outputStream: NV_ENC_CUSTREAM_PTR,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncCreateBitstreamBuffer(
         encoder: *mut ::core::ffi::c_void,
         createBitstreamBufferParams: *mut NV_ENC_CREATE_BITSTREAM_BUFFER,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncDestroyBitstreamBuffer(
         encoder: *mut ::core::ffi::c_void,
         bitstreamBuffer: NV_ENC_OUTPUT_PTR,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncEncodePicture(
         encoder: *mut ::core::ffi::c_void,
         encodePicParams: *mut NV_ENC_PIC_PARAMS,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncLockBitstream(
         encoder: *mut ::core::ffi::c_void,
         lockBitstreamBufferParams: *mut NV_ENC_LOCK_BITSTREAM,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncUnlockBitstream(
         encoder: *mut ::core::ffi::c_void,
         bitstreamBuffer: NV_ENC_OUTPUT_PTR,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncLockInputBuffer(
         encoder: *mut ::core::ffi::c_void,
         lockInputBufferParams: *mut NV_ENC_LOCK_INPUT_BUFFER,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncUnlockInputBuffer(
         encoder: *mut ::core::ffi::c_void,
         inputBuffer: NV_ENC_INPUT_PTR,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetEncodeStats(
         encoder: *mut ::core::ffi::c_void,
         encodeStats: *mut NV_ENC_STAT,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetSequenceParams(
         encoder: *mut ::core::ffi::c_void,
         sequenceParamPayload: *mut NV_ENC_SEQUENCE_PARAM_PAYLOAD,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncGetSequenceParamEx(
         encoder: *mut ::core::ffi::c_void,
         encInitParams: *mut NV_ENC_INITIALIZE_PARAMS,
         sequenceParamPayload: *mut NV_ENC_SEQUENCE_PARAM_PAYLOAD,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncRegisterAsyncEvent(
         encoder: *mut ::core::ffi::c_void,
         eventParams: *mut NV_ENC_EVENT_PARAMS,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncUnregisterAsyncEvent(
         encoder: *mut ::core::ffi::c_void,
         eventParams: *mut NV_ENC_EVENT_PARAMS,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncMapInputResource(
         encoder: *mut ::core::ffi::c_void,
         mapInputResParams: *mut NV_ENC_MAP_INPUT_RESOURCE,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncUnmapInputResource(
         encoder: *mut ::core::ffi::c_void,
         mappedInputBuffer: NV_ENC_INPUT_PTR,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncDestroyEncoder(encoder: *mut ::core::ffi::c_void) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncInvalidateRefFrames(
         encoder: *mut ::core::ffi::c_void,
         invalidRefFrameTimeStamp: u64,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncOpenEncodeSessionEx(
         openSessionExParams: *mut NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
         encoder: *mut *mut ::core::ffi::c_void,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncRegisterResource(
         encoder: *mut ::core::ffi::c_void,
         registerResParams: *mut NV_ENC_REGISTER_RESOURCE,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncUnregisterResource(
         encoder: *mut ::core::ffi::c_void,
         registeredResource: NV_ENC_REGISTERED_PTR,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncReconfigureEncoder(
         encoder: *mut ::core::ffi::c_void,
         reInitEncodeParams: *mut NV_ENC_RECONFIGURE_PARAMS,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncCreateMVBuffer(
         encoder: *mut ::core::ffi::c_void,
         createMVBufferParams: *mut NV_ENC_CREATE_MV_BUFFER,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncDestroyMVBuffer(
         encoder: *mut ::core::ffi::c_void,
         mvBuffer: NV_ENC_OUTPUT_PTR,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncRunMotionEstimationOnly(
         encoder: *mut ::core::ffi::c_void,
         meOnlyParams: *mut NV_ENC_MEONLY_PARAMS,
     ) -> NVENCSTATUS;
+    #[must_use]
     pub fn NvEncodeAPIGetMaxSupportedVersion(version: *mut u32) -> NVENCSTATUS;
     pub fn NvEncGetLastErrorString(encoder: *mut ::core::ffi::c_void)
         -> *const ::core::ffi::c_char;
+    #[must_use]
     pub fn NvEncodeAPICreateInstance(functionList: *mut NV_ENCODE_API_FUNCTION_LIST)
         -> NVENCSTATUS;
 }

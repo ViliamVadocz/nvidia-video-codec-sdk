@@ -4,8 +4,12 @@ bindgen \
     --allowlist-type cuvid.* \
     --allowlist-type CUVID.* \
     --allowlist-function cuvid.* \
+    --allowlist-var \[IPBS\]_VOP \
+    --allowlist-var cuvid.* \
     --blocklist-file .*/cuda\.h \
     --blocklist-file .*/std.*\.h \
+    --must-use-type CUresult \
+    --must-use-type cuvidDecodeStatus \
     \
     --default-enum-style=rust \
     --no-doc-comments \
@@ -22,9 +26,11 @@ bindgen \
     --allowlist-type cudaAudio.* \
     --allowlist-type HEVC.* \
     --allowlist-function cuvid.* \
+    --allowlist-var MAX_CLOCK_TS \
     --blocklist-file .*/cuda\.h \
     --blocklist-file .*/std.*\.h \
     --blocklist-file .*/cuviddec\.h \
+    --must-use-type CUresult \
     \
     --default-enum-style=rust \
     --no-doc-comments \
@@ -43,10 +49,14 @@ bindgen \
     --allowlist-type PENV.* \
     --allowlist-function NvEncodeAPI.* \
     --allowlist-function NvEnc.* \
+    --allowlist-var NVENC.* \
+    --allowlist-var NV_ENC.* \
+    --allowlist-var NV_MAX.* \
     --blocklist-file .*/win.*\.h \
     --blocklist-file .*/cuda\.h \
     --blocklist-file .*/std.*\.h \
     --blocklist-file .*/cuviddec\.h \
+    --must-use-type NVENCSTATUS \
     \
     --default-enum-style=rust \
     --no-doc-comments \

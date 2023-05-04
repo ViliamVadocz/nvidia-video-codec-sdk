@@ -80,6 +80,7 @@ where
         }
     }
 }
+pub const MAX_CLOCK_TS: u32 = 3;
 pub type CUvideosource = *mut ::core::ffi::c_void;
 pub type CUvideoparser = *mut ::core::ffi::c_void;
 pub type CUvideotimestamp = ::core::ffi::c_longlong;
@@ -1869,34 +1870,43 @@ impl _CUVIDPARSERPARAMS {
 }
 pub type CUVIDPARSERPARAMS = _CUVIDPARSERPARAMS;
 extern "C" {
+    #[must_use]
     pub fn cuvidCreateVideoSource(
         pObj: *mut CUvideosource,
         pszFileName: *const ::core::ffi::c_char,
         pParams: *mut CUVIDSOURCEPARAMS,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidCreateVideoSourceW(
         pObj: *mut CUvideosource,
         pwszFileName: *const wchar_t,
         pParams: *mut CUVIDSOURCEPARAMS,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidDestroyVideoSource(obj: CUvideosource) -> CUresult;
+    #[must_use]
     pub fn cuvidSetVideoSourceState(obj: CUvideosource, state: cudaVideoState) -> CUresult;
     pub fn cuvidGetVideoSourceState(obj: CUvideosource) -> cudaVideoState;
+    #[must_use]
     pub fn cuvidGetSourceVideoFormat(
         obj: CUvideosource,
         pvidfmt: *mut CUVIDEOFORMAT,
         flags: ::core::ffi::c_uint,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidGetSourceAudioFormat(
         obj: CUvideosource,
         paudfmt: *mut CUAUDIOFORMAT,
         flags: ::core::ffi::c_uint,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidCreateVideoParser(
         pObj: *mut CUvideoparser,
         pParams: *mut CUVIDPARSERPARAMS,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidParseVideoData(obj: CUvideoparser, pPacket: *mut CUVIDSOURCEDATAPACKET)
         -> CUresult;
+    #[must_use]
     pub fn cuvidDestroyVideoParser(obj: CUvideoparser) -> CUresult;
 }

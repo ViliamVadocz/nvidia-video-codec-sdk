@@ -80,6 +80,10 @@ where
         }
     }
 }
+pub const I_VOP: u32 = 0;
+pub const P_VOP: u32 = 1;
+pub const B_VOP: u32 = 2;
+pub const S_VOP: u32 = 3;
 pub type CUvideodecoder = *mut ::core::ffi::c_void;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -7917,25 +7921,32 @@ fn bindgen_test_layout__CUVIDRECONFIGUREDECODERINFO() {
 }
 pub type CUVIDRECONFIGUREDECODERINFO = _CUVIDRECONFIGUREDECODERINFO;
 extern "C" {
+    #[must_use]
     pub fn cuvidGetDecoderCaps(pdc: *mut CUVIDDECODECAPS) -> CUresult;
+    #[must_use]
     pub fn cuvidCreateDecoder(
         phDecoder: *mut CUvideodecoder,
         pdci: *mut CUVIDDECODECREATEINFO,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidDestroyDecoder(hDecoder: CUvideodecoder) -> CUresult;
+    #[must_use]
     pub fn cuvidDecodePicture(
         hDecoder: CUvideodecoder,
         pPicParams: *mut CUVIDPICPARAMS,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidGetDecodeStatus(
         hDecoder: CUvideodecoder,
         nPicIdx: ::core::ffi::c_int,
         pDecodeStatus: *mut CUVIDGETDECODESTATUS,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidReconfigureDecoder(
         hDecoder: CUvideodecoder,
         pDecReconfigParams: *mut CUVIDRECONFIGUREDECODERINFO,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidMapVideoFrame64(
         hDecoder: CUvideodecoder,
         nPicIdx: ::core::ffi::c_int,
@@ -7943,12 +7954,17 @@ extern "C" {
         pPitch: *mut ::core::ffi::c_uint,
         pVPP: *mut CUVIDPROCPARAMS,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidUnmapVideoFrame64(
         hDecoder: CUvideodecoder,
         DevPtr: ::core::ffi::c_ulonglong,
     ) -> CUresult;
+    #[must_use]
     pub fn cuvidCtxLockCreate(pLock: *mut CUvideoctxlock, ctx: CUcontext) -> CUresult;
+    #[must_use]
     pub fn cuvidCtxLockDestroy(lck: CUvideoctxlock) -> CUresult;
+    #[must_use]
     pub fn cuvidCtxLock(lck: CUvideoctxlock, reserved_flags: ::core::ffi::c_uint) -> CUresult;
+    #[must_use]
     pub fn cuvidCtxUnlock(lck: CUvideoctxlock, reserved_flags: ::core::ffi::c_uint) -> CUresult;
 }
