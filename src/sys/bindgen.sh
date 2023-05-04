@@ -37,6 +37,7 @@ bindgen \
     --output nvcuvid.rs ./headers/nvcuvid.h
 bindgen \
     --allowlist-type NVENC.* \
+    --allowlist-type NV_ENC.* \
     --allowlist-type NV_ENCODE.* \
     --allowlist-type GUID \
     --allowlist-type PENV.* \
