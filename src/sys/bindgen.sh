@@ -72,3 +72,8 @@ bindgen \
     --merge-extern-blocks \
     --sort-semantically \
     --output nvEncodeAPI.rs ./headers/nvEncodeAPI.h
+
+# Additional preludes to make sure the bindings compile.
+echo -e "use cudarc::driver::sys::*;\n$(cat cuviddec.rs)" > cuviddec.rs
+echo -e "use super::cuviddec::*;\nuse cudarc::driver::sys::*;\ntype wchar_t = i32;\n$(cat nvcuvid.rs)" > nvcuvid.rs
+echo -e "$(cat version.rs)\n$(cat nvEncodeAPI.rs)" > nvEncodeAPI.rs
