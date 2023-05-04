@@ -241,6 +241,17 @@ pub enum _NV_ENC_MULTI_PASS {
 pub use self::_NV_ENC_MULTI_PASS as NV_ENC_MULTI_PASS;
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum _NV_ENC_EMPHASIS_MAP_LEVEL {
+    NV_ENC_EMPHASIS_MAP_LEVEL_0 = 0,
+    NV_ENC_EMPHASIS_MAP_LEVEL_1 = 1,
+    NV_ENC_EMPHASIS_MAP_LEVEL_2 = 2,
+    NV_ENC_EMPHASIS_MAP_LEVEL_3 = 3,
+    NV_ENC_EMPHASIS_MAP_LEVEL_4 = 4,
+    NV_ENC_EMPHASIS_MAP_LEVEL_5 = 5,
+}
+pub use self::_NV_ENC_EMPHASIS_MAP_LEVEL as NV_ENC_EMPHASIS_MAP_LEVEL;
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum _NV_ENC_QP_MAP_MODE {
     NV_ENC_QP_MAP_DISABLED = 0,
     NV_ENC_QP_MAP_EMPHASIS = 1,
@@ -307,6 +318,104 @@ pub enum _NV_ENC_BUFFER_FORMAT {
     NV_ENC_BUFFER_FORMAT_U8 = 1073741824,
 }
 pub use self::_NV_ENC_BUFFER_FORMAT as NV_ENC_BUFFER_FORMAT;
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_HEVC_1: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_H264_3;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_HEVC_2: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_H264_60;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_TIER_HEVC_MAIN: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_AUTOSELECT;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_AV1_2: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_AUTOSELECT;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_AV1_21: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_TIER_HEVC_HIGH;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_AV1_41: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_H264_1b;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_AV1_42: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_H264_1;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_AV1_43: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_H264_11;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_AV1_5: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_H264_12;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_AV1_51: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_H264_13;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_AV1_7: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_H264_2;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_AV1_71: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_H264_21;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_LEVEL_AV1_72: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_H264_22;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_TIER_AV1_0: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_LEVEL_AUTOSELECT;
+}
+impl _NV_ENC_LEVEL {
+    pub const NV_ENC_TIER_AV1_1: _NV_ENC_LEVEL = _NV_ENC_LEVEL::NV_ENC_TIER_HEVC_HIGH;
+}
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum _NV_ENC_LEVEL {
+    NV_ENC_LEVEL_AUTOSELECT = 0,
+    NV_ENC_LEVEL_H264_1 = 10,
+    NV_ENC_LEVEL_H264_1b = 9,
+    NV_ENC_LEVEL_H264_11 = 11,
+    NV_ENC_LEVEL_H264_12 = 12,
+    NV_ENC_LEVEL_H264_13 = 13,
+    NV_ENC_LEVEL_H264_2 = 20,
+    NV_ENC_LEVEL_H264_21 = 21,
+    NV_ENC_LEVEL_H264_22 = 22,
+    NV_ENC_LEVEL_H264_3 = 30,
+    NV_ENC_LEVEL_H264_31 = 31,
+    NV_ENC_LEVEL_H264_32 = 32,
+    NV_ENC_LEVEL_H264_4 = 40,
+    NV_ENC_LEVEL_H264_41 = 41,
+    NV_ENC_LEVEL_H264_42 = 42,
+    NV_ENC_LEVEL_H264_5 = 50,
+    NV_ENC_LEVEL_H264_51 = 51,
+    NV_ENC_LEVEL_H264_52 = 52,
+    NV_ENC_LEVEL_H264_60 = 60,
+    NV_ENC_LEVEL_H264_61 = 61,
+    NV_ENC_LEVEL_H264_62 = 62,
+    NV_ENC_LEVEL_HEVC_21 = 63,
+    NV_ENC_LEVEL_HEVC_3 = 90,
+    NV_ENC_LEVEL_HEVC_31 = 93,
+    NV_ENC_LEVEL_HEVC_4 = 120,
+    NV_ENC_LEVEL_HEVC_41 = 123,
+    NV_ENC_LEVEL_HEVC_5 = 150,
+    NV_ENC_LEVEL_HEVC_51 = 153,
+    NV_ENC_LEVEL_HEVC_52 = 156,
+    NV_ENC_LEVEL_HEVC_6 = 180,
+    NV_ENC_LEVEL_HEVC_61 = 183,
+    NV_ENC_LEVEL_HEVC_62 = 186,
+    NV_ENC_TIER_HEVC_HIGH = 1,
+    NV_ENC_LEVEL_AV1_22 = 2,
+    NV_ENC_LEVEL_AV1_23 = 3,
+    NV_ENC_LEVEL_AV1_3 = 4,
+    NV_ENC_LEVEL_AV1_31 = 5,
+    NV_ENC_LEVEL_AV1_32 = 6,
+    NV_ENC_LEVEL_AV1_33 = 7,
+    NV_ENC_LEVEL_AV1_4 = 8,
+    NV_ENC_LEVEL_AV1_52 = 14,
+    NV_ENC_LEVEL_AV1_53 = 15,
+    NV_ENC_LEVEL_AV1_6 = 16,
+    NV_ENC_LEVEL_AV1_61 = 17,
+    NV_ENC_LEVEL_AV1_62 = 18,
+    NV_ENC_LEVEL_AV1_63 = 19,
+    NV_ENC_LEVEL_AV1_73 = 23,
+    NV_ENC_LEVEL_AV1_AUTOSELECT = 24,
+}
+pub use self::_NV_ENC_LEVEL as NV_ENC_LEVEL;
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum _NVENCSTATUS {
@@ -338,6 +447,15 @@ pub enum _NVENCSTATUS {
     NV_ENC_ERR_RESOURCE_NOT_MAPPED = 25,
 }
 pub use self::_NVENCSTATUS as NVENCSTATUS;
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub enum _NV_ENC_PIC_FLAGS {
+    NV_ENC_PIC_FLAG_FORCEINTRA = 1,
+    NV_ENC_PIC_FLAG_FORCEIDR = 2,
+    NV_ENC_PIC_FLAG_OUTPUT_SPSPPS = 4,
+    NV_ENC_PIC_FLAG_EOS = 8,
+}
+pub use self::_NV_ENC_PIC_FLAGS as NV_ENC_PIC_FLAGS;
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub enum _NV_ENC_MEMORY_HEAP {
@@ -651,6 +769,69 @@ impl Default for _NV_ENC_CAPS_PARAM {
 pub type NV_ENC_CAPS_PARAM = _NV_ENC_CAPS_PARAM;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct _NV_ENC_ENCODE_OUT_PARAMS {
+    pub version: u32,
+    pub bitstreamSizeInBytes: u32,
+    pub reserved: [u32; 62usize],
+}
+#[test]
+fn bindgen_test_layout__NV_ENC_ENCODE_OUT_PARAMS() {
+    const UNINIT: ::core::mem::MaybeUninit<_NV_ENC_ENCODE_OUT_PARAMS> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_NV_ENC_ENCODE_OUT_PARAMS>(),
+        256usize,
+        concat!("Size of: ", stringify!(_NV_ENC_ENCODE_OUT_PARAMS))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_NV_ENC_ENCODE_OUT_PARAMS>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_NV_ENC_ENCODE_OUT_PARAMS))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).version) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_ENCODE_OUT_PARAMS),
+            "::",
+            stringify!(version)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).bitstreamSizeInBytes) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_ENCODE_OUT_PARAMS),
+            "::",
+            stringify!(bitstreamSizeInBytes)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).reserved) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_ENCODE_OUT_PARAMS),
+            "::",
+            stringify!(reserved)
+        )
+    );
+}
+impl Default for _NV_ENC_ENCODE_OUT_PARAMS {
+    fn default() -> Self {
+        let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::core::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type NV_ENC_ENCODE_OUT_PARAMS = _NV_ENC_ENCODE_OUT_PARAMS;
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct _NV_ENC_CREATE_INPUT_BUFFER {
     pub version: u32,
     pub width: u32,
@@ -907,6 +1088,200 @@ impl Default for _NV_ENC_CREATE_BITSTREAM_BUFFER {
     }
 }
 pub type NV_ENC_CREATE_BITSTREAM_BUFFER = _NV_ENC_CREATE_BITSTREAM_BUFFER;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct _NV_ENC_MVECTOR {
+    pub mvx: i16,
+    pub mvy: i16,
+}
+#[test]
+fn bindgen_test_layout__NV_ENC_MVECTOR() {
+    const UNINIT: ::core::mem::MaybeUninit<_NV_ENC_MVECTOR> = ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_NV_ENC_MVECTOR>(),
+        4usize,
+        concat!("Size of: ", stringify!(_NV_ENC_MVECTOR))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_NV_ENC_MVECTOR>(),
+        2usize,
+        concat!("Alignment of ", stringify!(_NV_ENC_MVECTOR))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).mvx) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_MVECTOR),
+            "::",
+            stringify!(mvx)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).mvy) as usize - ptr as usize },
+        2usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_MVECTOR),
+            "::",
+            stringify!(mvy)
+        )
+    );
+}
+pub type NV_ENC_MVECTOR = _NV_ENC_MVECTOR;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct _NV_ENC_H264_MV_DATA {
+    pub mv: [NV_ENC_MVECTOR; 4usize],
+    pub mbType: u8,
+    pub partitionType: u8,
+    pub reserved: u16,
+    pub mbCost: u32,
+}
+#[test]
+fn bindgen_test_layout__NV_ENC_H264_MV_DATA() {
+    const UNINIT: ::core::mem::MaybeUninit<_NV_ENC_H264_MV_DATA> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_NV_ENC_H264_MV_DATA>(),
+        24usize,
+        concat!("Size of: ", stringify!(_NV_ENC_H264_MV_DATA))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_NV_ENC_H264_MV_DATA>(),
+        4usize,
+        concat!("Alignment of ", stringify!(_NV_ENC_H264_MV_DATA))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).mv) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_H264_MV_DATA),
+            "::",
+            stringify!(mv)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).mbType) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_H264_MV_DATA),
+            "::",
+            stringify!(mbType)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).partitionType) as usize - ptr as usize },
+        17usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_H264_MV_DATA),
+            "::",
+            stringify!(partitionType)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).reserved) as usize - ptr as usize },
+        18usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_H264_MV_DATA),
+            "::",
+            stringify!(reserved)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).mbCost) as usize - ptr as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_H264_MV_DATA),
+            "::",
+            stringify!(mbCost)
+        )
+    );
+}
+pub type NV_ENC_H264_MV_DATA = _NV_ENC_H264_MV_DATA;
+#[repr(C)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct _NV_ENC_HEVC_MV_DATA {
+    pub mv: [NV_ENC_MVECTOR; 4usize],
+    pub cuType: u8,
+    pub cuSize: u8,
+    pub partitionMode: u8,
+    pub lastCUInCTB: u8,
+}
+#[test]
+fn bindgen_test_layout__NV_ENC_HEVC_MV_DATA() {
+    const UNINIT: ::core::mem::MaybeUninit<_NV_ENC_HEVC_MV_DATA> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_NV_ENC_HEVC_MV_DATA>(),
+        20usize,
+        concat!("Size of: ", stringify!(_NV_ENC_HEVC_MV_DATA))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_NV_ENC_HEVC_MV_DATA>(),
+        2usize,
+        concat!("Alignment of ", stringify!(_NV_ENC_HEVC_MV_DATA))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).mv) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_HEVC_MV_DATA),
+            "::",
+            stringify!(mv)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).cuType) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_HEVC_MV_DATA),
+            "::",
+            stringify!(cuType)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).cuSize) as usize - ptr as usize },
+        17usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_HEVC_MV_DATA),
+            "::",
+            stringify!(cuSize)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).partitionMode) as usize - ptr as usize },
+        18usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_HEVC_MV_DATA),
+            "::",
+            stringify!(partitionMode)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).lastCUInCTB) as usize - ptr as usize },
+        19usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_HEVC_MV_DATA),
+            "::",
+            stringify!(lastCUInCTB)
+        )
+    );
+}
+pub type NV_ENC_HEVC_MV_DATA = _NV_ENC_HEVC_MV_DATA;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct _NV_ENC_CREATE_MV_BUFFER {
@@ -8288,6 +8663,52 @@ impl Default for _NV_ENC_MAP_INPUT_RESOURCE {
 }
 pub type NV_ENC_MAP_INPUT_RESOURCE = _NV_ENC_MAP_INPUT_RESOURCE;
 #[repr(C)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct _NV_ENC_INPUT_RESOURCE_OPENGL_TEX {
+    pub texture: u32,
+    pub target: u32,
+}
+#[test]
+fn bindgen_test_layout__NV_ENC_INPUT_RESOURCE_OPENGL_TEX() {
+    const UNINIT: ::core::mem::MaybeUninit<_NV_ENC_INPUT_RESOURCE_OPENGL_TEX> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_NV_ENC_INPUT_RESOURCE_OPENGL_TEX>(),
+        8usize,
+        concat!("Size of: ", stringify!(_NV_ENC_INPUT_RESOURCE_OPENGL_TEX))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_NV_ENC_INPUT_RESOURCE_OPENGL_TEX>(),
+        4usize,
+        concat!(
+            "Alignment of ",
+            stringify!(_NV_ENC_INPUT_RESOURCE_OPENGL_TEX)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).texture) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_INPUT_RESOURCE_OPENGL_TEX),
+            "::",
+            stringify!(texture)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).target) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_INPUT_RESOURCE_OPENGL_TEX),
+            "::",
+            stringify!(target)
+        )
+    );
+}
+pub type NV_ENC_INPUT_RESOURCE_OPENGL_TEX = _NV_ENC_INPUT_RESOURCE_OPENGL_TEX;
+#[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct _NV_ENC_FENCE_POINT_D3D12 {
     pub version: u32,
@@ -8441,6 +8862,198 @@ impl _NV_ENC_FENCE_POINT_D3D12 {
     }
 }
 pub type NV_ENC_FENCE_POINT_D3D12 = _NV_ENC_FENCE_POINT_D3D12;
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct _NV_ENC_INPUT_RESOURCE_D3D12 {
+    pub version: u32,
+    pub reserved: u32,
+    pub pInputBuffer: NV_ENC_INPUT_PTR,
+    pub inputFencePoint: NV_ENC_FENCE_POINT_D3D12,
+    pub reserved1: [u32; 16usize],
+    pub reserved2: [*mut ::core::ffi::c_void; 16usize],
+}
+#[test]
+fn bindgen_test_layout__NV_ENC_INPUT_RESOURCE_D3D12() {
+    const UNINIT: ::core::mem::MaybeUninit<_NV_ENC_INPUT_RESOURCE_D3D12> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_NV_ENC_INPUT_RESOURCE_D3D12>(),
+        272usize,
+        concat!("Size of: ", stringify!(_NV_ENC_INPUT_RESOURCE_D3D12))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_NV_ENC_INPUT_RESOURCE_D3D12>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_NV_ENC_INPUT_RESOURCE_D3D12))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).version) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_INPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(version)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).reserved) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_INPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(reserved)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pInputBuffer) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_INPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(pInputBuffer)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).inputFencePoint) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_INPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(inputFencePoint)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).reserved1) as usize - ptr as usize },
+        80usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_INPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(reserved1)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).reserved2) as usize - ptr as usize },
+        144usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_INPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(reserved2)
+        )
+    );
+}
+impl Default for _NV_ENC_INPUT_RESOURCE_D3D12 {
+    fn default() -> Self {
+        let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::core::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type NV_ENC_INPUT_RESOURCE_D3D12 = _NV_ENC_INPUT_RESOURCE_D3D12;
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
+pub struct _NV_ENC_OUTPUT_RESOURCE_D3D12 {
+    pub version: u32,
+    pub reserved: u32,
+    pub pOutputBuffer: NV_ENC_INPUT_PTR,
+    pub outputFencePoint: NV_ENC_FENCE_POINT_D3D12,
+    pub reserved1: [u32; 16usize],
+    pub reserved2: [*mut ::core::ffi::c_void; 16usize],
+}
+#[test]
+fn bindgen_test_layout__NV_ENC_OUTPUT_RESOURCE_D3D12() {
+    const UNINIT: ::core::mem::MaybeUninit<_NV_ENC_OUTPUT_RESOURCE_D3D12> =
+        ::core::mem::MaybeUninit::uninit();
+    let ptr = UNINIT.as_ptr();
+    assert_eq!(
+        ::core::mem::size_of::<_NV_ENC_OUTPUT_RESOURCE_D3D12>(),
+        272usize,
+        concat!("Size of: ", stringify!(_NV_ENC_OUTPUT_RESOURCE_D3D12))
+    );
+    assert_eq!(
+        ::core::mem::align_of::<_NV_ENC_OUTPUT_RESOURCE_D3D12>(),
+        8usize,
+        concat!("Alignment of ", stringify!(_NV_ENC_OUTPUT_RESOURCE_D3D12))
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).version) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_OUTPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(version)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).reserved) as usize - ptr as usize },
+        4usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_OUTPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(reserved)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).pOutputBuffer) as usize - ptr as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_OUTPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(pOutputBuffer)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).outputFencePoint) as usize - ptr as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_OUTPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(outputFencePoint)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).reserved1) as usize - ptr as usize },
+        80usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_OUTPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(reserved1)
+        )
+    );
+    assert_eq!(
+        unsafe { ::core::ptr::addr_of!((*ptr).reserved2) as usize - ptr as usize },
+        144usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_NV_ENC_OUTPUT_RESOURCE_D3D12),
+            "::",
+            stringify!(reserved2)
+        )
+    );
+}
+impl Default for _NV_ENC_OUTPUT_RESOURCE_D3D12 {
+    fn default() -> Self {
+        let mut s = ::core::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::core::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+pub type NV_ENC_OUTPUT_RESOURCE_D3D12 = _NV_ENC_OUTPUT_RESOURCE_D3D12;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialOrd, Ord, PartialEq, Eq)]
 pub struct _NV_ENC_REGISTER_RESOURCE {
