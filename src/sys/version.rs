@@ -1,4 +1,4 @@
-// Constants from nvEncodeAPI that bindgen fails to generate.
+//! Constants from nvEncodeAPI that bindgen fails to generate.
 pub const fn NVENCAPI_STRUCT_VERSION(ver: u32) -> u32 {
     super::nvEncodeAPI::NVENCAPI_VERSION | (ver << 16) | (0x7 << 28)
 }
