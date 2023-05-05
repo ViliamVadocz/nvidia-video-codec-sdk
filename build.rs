@@ -1,13 +1,12 @@
 extern crate bindgen;
 
-use std::env;
 use std::path::PathBuf;
 
 // https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#basic-encoding-flow
-#[cfg(target_os = "windows")]
-const NVENC_LIB: &str = "nvencodeapi";
 #[cfg(target_os = "linux")]
 const NVENC_LIB: &str = "nvidia-encode";
+#[cfg(target_os = "windows")]
+const NVENC_LIB: &str = "nvencodeapi";
 
 // https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvdec-video-decoder-api-prog-guide/index.html#using-nvidia-video-decoder-nvdecode-api
 const NVDEC_LIB: &str = "nvcuvid";
@@ -44,11 +43,9 @@ fn main() {
     println!("cargo:rustc-link-lib={NVENC_LIB}");
     println!("cargo:rustc-link-lib={NVDEC_LIB}");
 
-    for path in lib_candidates(cuda_root.clone()) {
+    for path in lib_candidates(cuda_root) {
         println!("cargo:rustc-link-search={}", path.display());
     }
-
-    // generate_bindings(cuda_root);
 }
 
 fn rerun_if_changed() {
@@ -96,24 +93,4 @@ fn find_cuda_root() -> PathBuf {
         That means the headers are at located at `$CUDA_PATH/include/`."
     );
     root
-}
-
-fn generate_bindings(cuda_root: PathBuf) {
-    let bindings = bindgen::Builder::default()
-        .header("wrapper.h")
-        .clang_arg(format!("-I{}", cuda_root.join("include").display()))
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
-        // Windows compatibility https://github.com/rust-lang/rust-bindgen/issues/1562#issuecomment-851038587
-        .blocklist_type("_IMAGE_TLS_DIRECTORY64")
-        .blocklist_type("IMAGE_TLS_DIRECTORY64")
-        .blocklist_type("PIMAGE_TLS_DIRECTORY64")
-        .blocklist_type("IMAGE_TLS_DIRECTORY")
-        .blocklist_type("PIMAGE_TLS_DIRECTORY")
-        .generate()
-        .expect("Unable to generate bindings");
-
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
-    bindings
-        .write_to_file(out_path.join("bindings.rs"))
-        .expect("Could not write bindings");
 }
