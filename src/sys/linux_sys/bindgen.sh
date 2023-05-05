@@ -20,7 +20,7 @@ bindgen \
     --use-core \
     --merge-extern-blocks \
     --sort-semantically \
-    --output cuviddec.rs ./headers/cuviddec.h
+    --output cuviddec.rs ../headers/cuviddec.h
 
 bindgen \
     --allowlist-type CU.* \
@@ -43,7 +43,7 @@ bindgen \
     --use-core \
     --merge-extern-blocks \
     --sort-semantically \
-    --output nvcuvid.rs ./headers/nvcuvid.h
+    --output nvcuvid.rs ../headers/nvcuvid.h
 
 bindgen \
     --allowlist-type NVENC.* \
@@ -56,7 +56,6 @@ bindgen \
     --allowlist-var NVENC.* \
     --allowlist-var NV_ENC.* \
     --allowlist-var NV_MAX.* \
-    --blocklist-file .*/win.*\.h \
     --blocklist-file .*/cuda\.h \
     --blocklist-file .*/std.*\.h \
     --blocklist-file .*/cuviddec\.h \
@@ -71,9 +70,9 @@ bindgen \
     --use-core \
     --merge-extern-blocks \
     --sort-semantically \
-    --output nvEncodeAPI.rs ./headers/nvEncodeAPI.h
+    --output nvEncodeAPI.rs ../headers/nvEncodeAPI.h
 
 # Additional preludes to make sure the bindings compile.
 echo -e "use cudarc::driver::sys::*;\n$(cat cuviddec.rs)" > cuviddec.rs
 echo -e "use super::cuviddec::*;\nuse cudarc::driver::sys::*;\ntype wchar_t = i32;\n$(cat nvcuvid.rs)" > nvcuvid.rs
-echo -e "pub use super::version::*;\n$(cat nvEncodeAPI.rs)" > nvEncodeAPI.rs
+echo -e "pub use super::super::version::*;\n$(cat nvEncodeAPI.rs)" > nvEncodeAPI.rs
