@@ -1,11 +1,4 @@
-use std::ffi::{c_char, c_ulong, c_ushort};
-
 pub mod sys;
-
-pub fn NVENCAPI_STRUCT_VERSION(ver: i32) -> i32 {
-    use crate::nvEncodeAPI::NVENCAPI_VERSION;
-    (NVENCAPI_VERSION | ((ver) << 16) | (0x7 << 28))
-}
 
 #[cfg(test)]
 mod tests {
