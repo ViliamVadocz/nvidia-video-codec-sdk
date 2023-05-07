@@ -20,23 +20,35 @@ mod tests {
             // 3.1. Opening and Encode Session
 
             // Initialize Cuda Context. (TODO: Handle errors safely.)
-            cuInit(0);
+            assert_eq!(CUresult::CUDA_SUCCESS, cuInit(0));
             let mut nGpu = 0;
             let iGpu = 0;
-            cuDeviceGetCount(&mut nGpu as *mut c_int);
+            assert_eq!(
+                CUresult::CUDA_SUCCESS,
+                cuDeviceGetCount(&mut nGpu as *mut c_int)
+            );
             let mut cuDevice = 0;
-            cuDeviceGet(&mut cuDevice as *mut CUdevice, iGpu as c_int);
+            assert_eq!(
+                CUresult::CUDA_SUCCESS,
+                cuDeviceGet(&mut cuDevice as *mut CUdevice, iGpu as c_int)
+            );
             let mut szDeviceName: [c_char; 80] = [0; 80];
-            cuDeviceGetName(
-                &mut szDeviceName as *mut c_char,
-                szDeviceName.len() as c_int,
-                cuDevice as CUdevice,
+            assert_eq!(
+                CUresult::CUDA_SUCCESS,
+                cuDeviceGetName(
+                    &mut szDeviceName as *mut c_char,
+                    szDeviceName.len() as c_int,
+                    cuDevice as CUdevice,
+                )
             );
             let mut cuContext = ptr::null_mut();
-            cuCtxCreate_v2(
-                &mut cuContext as *mut CUcontext,
-                0 as c_uint,
-                cuDevice as CUdevice,
+            assert_eq!(
+                CUresult::CUDA_SUCCESS,
+                cuCtxCreate_v2(
+                    &mut cuContext as *mut CUcontext,
+                    0 as c_uint,
+                    cuDevice as CUdevice,
+                )
             );
 
             // Create empty function buffer.
@@ -46,7 +58,10 @@ mod tests {
             };
 
             // Create Encode API Instance (populate function buffer).
-            NvEncodeAPICreateInstance(&mut function_list as *mut NV_ENCODE_API_FUNCTION_LIST);
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                NvEncodeAPICreateInstance(&mut function_list as *mut NV_ENCODE_API_FUNCTION_LIST)
+            );
 
             // Retrieve all functions.
             // let nvEncOpenEncodeSession = function_list.nvEncOpenEncodeSession.unwrap();
@@ -100,24 +115,33 @@ mod tests {
                 device: cuContext as *mut c_void, // Pass the CUDA Context as the device.
                 ..Default::default()
             };
-            nvEncOpenEncodeSessionEx(
-                &mut session_params as *mut _NV_ENC_OPEN_ENCODE_SESSIONEX_PARAMS,
-                &mut encoder as *mut *mut c_void,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncOpenEncodeSessionEx(
+                    &mut session_params as *mut _NV_ENC_OPEN_ENCODE_SESSIONEX_PARAMS,
+                    &mut encoder as *mut *mut c_void,
+                )
             );
 
             // 3.2. Selecting Encoder Codec GUID
 
             // Query number of supported encoder codec GUIDs.
             let mut supported_GUID_count = 0;
-            nvEncGetEncodeGUIDCount(encoder, &mut supported_GUID_count as *mut u32);
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncGetEncodeGUIDCount(encoder, &mut supported_GUID_count as *mut u32)
+            );
             // Get the supported GUIDs.
             let mut encode_GUIDs = vec![GUID::default(); supported_GUID_count as usize];
             let mut actual_GUID_count: u32 = 0;
-            nvEncGetEncodeGUIDs(
-                encoder,
-                encode_GUIDs.as_mut_ptr(),
-                supported_GUID_count,
-                &mut actual_GUID_count as *mut u32,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncGetEncodeGUIDs(
+                    encoder,
+                    encode_GUIDs.as_mut_ptr(),
+                    supported_GUID_count,
+                    &mut actual_GUID_count as *mut u32,
+                )
             );
             println!(
                 "encode GUIDs: {:?}",
@@ -135,20 +159,26 @@ mod tests {
 
             // Query number of preset GUIDs.
             let mut encode_preset_GUID_count = 0;
-            nvEncGetEncodePresetCount(
-                encoder,
-                encode_GUID,
-                &mut encode_preset_GUID_count as *mut u32,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncGetEncodePresetCount(
+                    encoder,
+                    encode_GUID,
+                    &mut encode_preset_GUID_count as *mut u32,
+                )
             );
             // Get the preset GUIDs.
             let mut actual_preset_GUID_count: u32 = 0;
             let mut preset_GUIDs = vec![GUID::default(); encode_preset_GUID_count as usize];
-            nvEncGetEncodePresetGUIDs(
-                encoder,
-                encode_GUID,
-                preset_GUIDs.as_mut_ptr() as *mut _GUID,
-                encode_preset_GUID_count,
-                &mut actual_preset_GUID_count as *mut u32,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncGetEncodePresetGUIDs(
+                    encoder,
+                    encode_GUID,
+                    preset_GUIDs.as_mut_ptr() as *mut _GUID,
+                    encode_preset_GUID_count,
+                    &mut actual_preset_GUID_count as *mut u32,
+                )
             );
             println!(
                 "preset GUIDs: {:?}",
@@ -163,13 +193,23 @@ mod tests {
 
             // 3.3.2. Selecting encoder preset configuration
 
-            let mut preset_config = NV_ENC_PRESET_CONFIG::default();
-            nvEncGetEncodePresetConfigEx(
-                encoder,
-                encode_GUID,
-                preset_GUID,
-                NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_LOW_LATENCY,
-                &mut preset_config as *mut _NV_ENC_PRESET_CONFIG,
+            let mut preset_config = NV_ENC_PRESET_CONFIG {
+                version: NV_ENC_PRESET_CONFIG_VER,
+                presetCfg: NV_ENC_CONFIG {
+                    version: NV_ENC_CONFIG_VER,
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncGetEncodePresetConfigEx(
+                    encoder,
+                    encode_GUID,
+                    preset_GUID,
+                    NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_LOW_LATENCY,
+                    &mut preset_config as *mut _NV_ENC_PRESET_CONFIG,
+                )
             );
 
             assert_eq!(preset_config.version, NV_ENC_PRESET_CONFIG_VER);
@@ -181,20 +221,26 @@ mod tests {
 
             // Query the number of encoder profile GUIDs.
             let mut profile_GUID_count = 0;
-            nvEncGetEncodeProfileGUIDCount(
-                encoder,
-                encode_GUID,
-                &mut profile_GUID_count as *mut u32,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncGetEncodeProfileGUIDCount(
+                    encoder,
+                    encode_GUID,
+                    &mut profile_GUID_count as *mut u32,
+                )
             );
             // Get the profile GUIDs.
             let mut profile_GUIDs = vec![GUID::default(); profile_GUID_count as usize];
             let mut actual_profile_GUID_count: u32 = 0;
-            nvEncGetEncodeProfileGUIDs(
-                encoder,
-                encode_GUID,
-                profile_GUIDs.as_mut_ptr(),
-                profile_GUID_count,
-                &mut actual_profile_GUID_count as *mut u32,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncGetEncodeProfileGUIDs(
+                    encoder,
+                    encode_GUID,
+                    profile_GUIDs.as_mut_ptr(),
+                    profile_GUID_count,
+                    &mut actual_profile_GUID_count as *mut u32,
+                )
             );
             println!(
                 "profile GUIDs: {:?}",
@@ -211,10 +257,13 @@ mod tests {
 
             // Query the number of supported input formats.
             let mut supported_format_count = 0;
-            nvEncGetInputFormatCount(
-                encoder,
-                encode_GUID,
-                &mut supported_format_count as *mut u32,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncGetInputFormatCount(
+                    encoder,
+                    encode_GUID,
+                    &mut supported_format_count as *mut u32,
+                )
             );
             // Get the supported formats.
             let mut supported_formats = vec![
@@ -222,12 +271,15 @@ mod tests {
                 supported_format_count as usize
             ];
             let mut actual_format_count: u32 = 0;
-            nvEncGetInputFormats(
-                encoder,
-                encode_GUID,
-                supported_formats.as_mut_ptr(),
-                supported_format_count,
-                &mut actual_format_count as *mut u32,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncGetInputFormats(
+                    encoder,
+                    encode_GUID,
+                    supported_formats.as_mut_ptr(),
+                    supported_format_count,
+                    &mut actual_format_count as *mut u32,
+                )
             );
             println!(
                 "supported formats: {:?}",
@@ -261,9 +313,12 @@ mod tests {
             };
             // TODO: Consider further options that are in bitfields
             // example: initialize_params.set_enableWeightedPrediction(1);
-            nvEncInitializeEncoder(
-                encoder,
-                &mut initialize_params as *mut NV_ENC_INITIALIZE_PARAMS,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncInitializeEncoder(
+                    encoder,
+                    &mut initialize_params as *mut NV_ENC_INITIALIZE_PARAMS,
+                )
             );
 
             // 3.9. Creating Resources Required to Hold Input/output Data
@@ -278,23 +333,29 @@ mod tests {
                 pSysMemBuffer: ptr::null_mut(), // TODO: How to make a system memory buffer?
                 ..Default::default()
             };
-            nvEncCreateInputBuffer(
-                encoder,
-                &mut create_input_buffer_params as &mut NV_ENC_CREATE_INPUT_BUFFER,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncCreateInputBuffer(
+                    encoder,
+                    &mut create_input_buffer_params as &mut NV_ENC_CREATE_INPUT_BUFFER,
+                )
             );
             let input_buffer = create_input_buffer_params.inputBuffer;
 
-            // Allocate output buffer.
+            // Allocate output bitstream buffer.
             let mut create_bitstream_buffer_params = NV_ENC_CREATE_BITSTREAM_BUFFER {
                 version: NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
                 bitstreamBuffer: ptr::null_mut(),
                 ..Default::default()
             };
-            nvEncCreateBitstreamBuffer(
-                encoder,
-                &mut create_bitstream_buffer_params as *mut NV_ENC_CREATE_BITSTREAM_BUFFER,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncCreateBitstreamBuffer(
+                    encoder,
+                    &mut create_bitstream_buffer_params as *mut NV_ENC_CREATE_BITSTREAM_BUFFER,
+                )
             );
-            let output_buffer = create_bitstream_buffer_params.bitstreamBuffer;
+            let output_bitstream_buffer = create_bitstream_buffer_params.bitstreamBuffer;
 
             // 4.1. Preparing Input Buffers for Encoding
 
@@ -304,16 +365,22 @@ mod tests {
                 inputBuffer: input_buffer,
                 ..Default::default()
             };
-            nvEncLockInputBuffer(
-                encoder,
-                &mut lock_input_buffer_params as *mut NV_ENC_LOCK_INPUT_BUFFER,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncLockInputBuffer(
+                    encoder,
+                    &mut lock_input_buffer_params as *mut NV_ENC_LOCK_INPUT_BUFFER,
+                )
             );
             let _input_buffer_data = lock_input_buffer_params.bufferDataPtr;
 
             // TODO: Fill input buffer with data.
 
             // Unlock input buffer.
-            nvEncUnlockInputBuffer(encoder, input_buffer);
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncUnlockInputBuffer(encoder, input_buffer)
+            );
 
             // 4.3. Submitting Input Frame for Encoding
 
@@ -325,40 +392,64 @@ mod tests {
                 inputPitch: WIDTH,
                 encodePicFlags: NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32, // TODO: Which flag should be used when?
                 inputBuffer: input_buffer,
-                outputBitstream: output_buffer,
+                outputBitstream: output_bitstream_buffer,
                 bufferFmt: buffer_format,
                 pictureStruct: NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
                 codecPicParams: NV_ENC_CODEC_PIC_PARAMS::default(),
                 ..Default::default()
             };
-            nvEncEncodePicture(encoder, &mut encode_pic_params as *mut NV_ENC_PIC_PARAMS);
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncEncodePicture(encoder, &mut encode_pic_params as *mut NV_ENC_PIC_PARAMS)
+            );
 
             // 4.4. Retrieving Encoded Output
 
+            /*
+
             // Lock output bitsream.
+            let mut slice_offsets = [0; 128];
             let mut lock_bitstream_buffer_params = NV_ENC_LOCK_BITSTREAM {
                 version: NV_ENC_LOCK_BITSTREAM_VER,
-                outputBitstream: output_buffer,
+                outputBitstream: output_bitstream_buffer,
+                sliceOffsets: slice_offsets.as_mut_ptr(),
                 ..Default::default()
             };
-            nvEncLockBitstream(
-                encoder,
-                &mut lock_bitstream_buffer_params as *mut NV_ENC_LOCK_BITSTREAM,
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncLockBitstream(
+                    encoder,
+                    &mut lock_bitstream_buffer_params as *mut NV_ENC_LOCK_BITSTREAM,
+                )
             );
             let _output_buffer_data = lock_bitstream_buffer_params.bitstreamBufferPtr;
 
             // TODO: Examine output buffer data.
 
             // Unlock output bitstream.
-            nvEncUnlockBitstream(encoder, output_buffer);
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncUnlockBitstream(encoder, output_bitstream_buffer)
+            );
+
+            */
 
             // 5.2. Releasing Resources
 
-            nvEncDestroyInputBuffer(encoder, input_buffer);
-            nvEncDestroyBitstreamBuffer(encoder, output_buffer);
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncDestroyInputBuffer(encoder, input_buffer)
+            );
+            assert_eq!(
+                NVENCSTATUS::NV_ENC_SUCCESS,
+                nvEncDestroyBitstreamBuffer(encoder, output_bitstream_buffer)
+            );
 
             // 5.3. Closing Encode Session
-            nvEncDestroyEncoder(encoder);
+            assert_eq!(NVENCSTATUS::NV_ENC_SUCCESS, nvEncDestroyEncoder(encoder));
+
+            // Destroy CUDA Context.
+            assert_eq!(CUresult::CUDA_SUCCESS, cuCtxDestroy_v2(cuContext));
         }
     }
 }
