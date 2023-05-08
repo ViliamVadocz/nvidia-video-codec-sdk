@@ -85,4 +85,5 @@ impl NVENCSTATUS {
     }
 }
 
-// TODO: Improve error types (each function only uses a subset of the possible error variants)
+// TODO: Improve error types
+// (each function only uses a subset of the possible error variants)

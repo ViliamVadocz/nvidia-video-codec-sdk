@@ -2,9 +2,8 @@ use std::ffi::c_void;
 
 use cudarc::driver::sys::CUcontext;
 
-use crate::sys::nvEncodeAPI::*;
-
 use super::{encoder::Encoder, result::EncodeResult};
+use crate::sys::nvEncodeAPI::*;
 
 type OpenEncodeSession = unsafe extern "C" fn(
     device: *mut ::core::ffi::c_void,

@@ -2,13 +2,16 @@ extern crate bindgen;
 
 use std::path::PathBuf;
 
-// https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#basic-encoding-flow
+// https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/
+// nvenc-video-encoder-api-prog-guide/index.html#basic-encoding-flow
 #[cfg(target_os = "linux")]
 const NVENC_LIB: &str = "nvidia-encode";
 #[cfg(target_os = "windows")]
 const NVENC_LIB: &str = "nvencodeapi";
 
-// https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvdec-video-decoder-api-prog-guide/index.html#using-nvidia-video-decoder-nvdecode-api
+// https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/
+// nvdec-video-decoder-api-prog-guide/index.html#
+// using-nvidia-video-decoder-nvdecode-api
 const NVDEC_LIB: &str = "nvcuvid";
 
 // Taken from https://github.com/coreylowman/cudarc/blob/main/build.rs
@@ -71,14 +74,15 @@ fn lib_candidates(root: PathBuf) -> impl Iterator<Item = PathBuf> {
         .filter(|p| p.is_dir())
 }
 
-/// We expect both `cuda.h` and all the NVIDIA Video Codec SDK headers to be in the same place.
+/// We expect both `cuda.h` and all the NVIDIA Video Codec SDK headers to be in
+/// the same place.
 fn find_cuda_root() -> PathBuf {
     let root = cuda_root_candidates()
         .find(|path| path.join("include").join("cuda.h").is_file())
         .unwrap_or_else(|| {
             panic!(
-                "Could not find the CUDA header file `cuda.h`.\n\
-                Try setting `CUDA_PATH` so that the header is located at `$CUDA_PATH/include/cuda.h`.\n"
+                "Could not find the CUDA header file `cuda.h`.\nTry setting `CUDA_PATH` so that \
+                 the header is located at `$CUDA_PATH/include/cuda.h`.\n"
             )
         });
     assert!(
@@ -88,9 +92,9 @@ fn find_cuda_root() -> PathBuf {
                 && include.join("nvcuvid.h").is_file()
                 && include.join("nvEncodeAPI.h").is_file()
         },
-        "Could not find the required NVIDIA Video Codec SDK headers.\n\
-        Place the headers at the same location as your CUDA headers.\n\
-        That means the headers are at located at `$CUDA_PATH/include/`."
+        "Could not find the required NVIDIA Video Codec SDK headers.\nPlace the headers at the \
+         same location as your CUDA headers.\nThat means the headers are at located at \
+         `$CUDA_PATH/include/`."
     );
     root
 }

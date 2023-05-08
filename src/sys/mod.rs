@@ -6,11 +6,13 @@
 
 mod version;
 
+#[rustfmt::skip]
 #[cfg(target_os = "linux")]
 mod linux_sys;
 #[cfg(target_os = "linux")]
 pub use linux_sys::*;
 
+#[rustfmt::skip]
 #[cfg(target_os = "windows")]
 mod windows_sys;
 #[cfg(target_os = "windows")]

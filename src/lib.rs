@@ -3,12 +3,14 @@ pub mod sys;
 
 #[cfg(test)]
 mod tests {
-    use crate::sys::nvEncodeAPI::*;
-    use cudarc::driver::sys::*;
     use std::{
         ffi::{c_char, c_int, c_uint, c_void},
         ptr,
     };
+
+    use cudarc::driver::sys::*;
+
+    use crate::sys::nvEncodeAPI::*;
 
     #[allow(non_snake_case)]
     #[test]
@@ -101,7 +103,8 @@ mod tests {
             // let nvEncReconfigureEncoder = function_list.nvEncReconfigureEncoder.unwrap();
             // let nvEncCreateMVBuffer = function_list.nvEncCreateMVBuffer.unwrap();
             // let nvEncDestroyMVBuffer = function_list.nvEncDestroyMVBuffer.unwrap();
-            // let nvEncRunMotionEstimationOnly = function_list.nvEncRunMotionEstimationOnly.unwrap();
+            // let nvEncRunMotionEstimationOnly =
+            //     function_list.nvEncRunMotionEstimationOnly.unwrap();
             // let nvEncGetLastErrorString = function_list.nvEncGetLastErrorString.unwrap();
             // let nvEncSetIOCudaStreams = function_list.nvEncSetIOCudaStreams.unwrap();
             let nvEncGetEncodePresetConfigEx = function_list.nvEncGetEncodePresetConfigEx.unwrap();
@@ -391,7 +394,8 @@ mod tests {
                 inputWidth: WIDTH,
                 inputHeight: HEIGHT,
                 inputPitch: WIDTH,
-                encodePicFlags: NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32, // TODO: Which flag should be used when?
+                // TODO: Which flag should be used when?
+                encodePicFlags: NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32,
                 inputBuffer: input_buffer,
                 outputBitstream: output_bitstream_buffer,
                 bufferFmt: buffer_format,
