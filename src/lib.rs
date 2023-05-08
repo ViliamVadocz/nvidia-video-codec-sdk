@@ -1,3 +1,4 @@
+pub mod safe;
 pub mod sys;
 
 #[cfg(test)]
@@ -109,7 +110,7 @@ mod tests {
             // Begin encoding session.
             let mut encoder = ptr::null_mut();
             let mut session_params = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS {
-                version: NVENCAPI_STRUCT_VERSION(1),
+                version: NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
                 deviceType: NV_ENC_DEVICE_TYPE::NV_ENC_DEVICE_TYPE_CUDA,
                 apiVersion: NVENCAPI_VERSION,
                 device: cuContext as *mut c_void, // Pass the CUDA Context as the device.
