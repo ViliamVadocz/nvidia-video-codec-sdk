@@ -6,8 +6,8 @@ bindgen \
     --allowlist-function cuvid.* \
     --allowlist-var \[IPBS\]_VOP \
     --allowlist-var cuvid.* \
-    --blocklist-file .*/cuda\.h \
-    --blocklist-file .*/std.*\.h \
+    --blocklist-file .*/cuda\\.h \
+    --blocklist-file .*/std.*\\.h \
     --must-use-type CUresult \
     --must-use-type cuvidDecodeStatus \
     \
@@ -29,9 +29,9 @@ bindgen \
     --allowlist-type HEVC.* \
     --allowlist-function cuvid.* \
     --allowlist-var MAX_CLOCK_TS \
-    --blocklist-file .*/cuda\.h \
-    --blocklist-file .*/std.*\.h \
-    --blocklist-file .*/cuviddec\.h \
+    --blocklist-file .*/cuda\\.h \
+    --blocklist-file .*/std.*\\.h \
+    --blocklist-file .*/cuviddec\\.h \
     --must-use-type CUresult \
     \
     --default-enum-style=rust \
@@ -56,9 +56,10 @@ bindgen \
     --allowlist-var NVENC.* \
     --allowlist-var NV_ENC.* \
     --allowlist-var NV_MAX.* \
-    --blocklist-file .*/cuda\.h \
-    --blocklist-file .*/std.*\.h \
-    --blocklist-file .*/cuviddec\.h \
+    --blocklist-item NV_ENC_\\w+_GUID \
+    --blocklist-file .*/cuda\\.h \
+    --blocklist-file .*/std.*\\.h \
+    --blocklist-file .*/cuviddec\\.h \
     --must-use-type NVENCSTATUS \
     \
     --default-enum-style=rust \
@@ -75,4 +76,4 @@ bindgen \
 # Additional preludes to make sure the bindings compile.
 echo -e "use cudarc::driver::sys::*;\n$(cat cuviddec.rs)" > cuviddec.rs
 echo -e "use super::cuviddec::*;\nuse cudarc::driver::sys::*;\ntype wchar_t = i32;\n$(cat nvcuvid.rs)" > nvcuvid.rs
-echo -e "pub use super::super::version::*;\n$(cat nvEncodeAPI.rs)" > nvEncodeAPI.rs
+echo -e "pub use super::super::version::*;\npub use super::super::guid::*;\n$(cat nvEncodeAPI.rs)" > nvEncodeAPI.rs
