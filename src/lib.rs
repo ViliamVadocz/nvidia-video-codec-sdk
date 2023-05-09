@@ -10,7 +10,7 @@ mod tests {
     use crate::{
         safe::api::EncodeAPI,
         sys::nvEncodeAPI::{
-            NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ABGR,
+            NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
             NV_ENC_CODEC_H264_GUID,
             NV_ENC_H264_PROFILE_HIGH_GUID,
             NV_ENC_INITIALIZE_PARAMS,
@@ -21,41 +21,27 @@ mod tests {
         },
     };
 
-    fn checkerboard(width: u32, height: u32, x: u32, y: u32) -> (u8, u8, u8) {
-        // Arbitrary value controlling checkerboard size.
-        const SKIP: u32 = 160;
-        let mut color = (255, 255, 0); // Blue always 0
-        if (y % SKIP < SKIP / 2) == (x % SKIP < SKIP / 2) {
-            color.0 = 0;
-            color.1 = 0;
-        } else {
-            // Red
-            if (x / SKIP) < (width / SKIP / 2) {
-                color.0 = 127;
-            }
-            // Green
-            if (y / SKIP) < (height / SKIP / 2) {
-                color.1 = 127;
-            }
-        }
-        color
+    fn get_color(width: u32, height: u32, x: u32, y: u32, t: f32) -> (u8, u8, u8, u8) {
+        let alpha = 255;
+        let red = (255 * x / width) as u8;
+        let green = (255 * y / height) as u8;
+        let blue = (255. * t) as u8;
+        (blue, green, red, alpha) // order might be dependant on endianness?
     }
 
-    fn generate_test_input(width: u32, height: u32, i: u32, i_max: u32) -> Vec<u8> {
-        let mut buf = vec![0; (width * height * 4) as usize];
-        let f = 1.0 - (i as f32 / i_max as f32); // Used for fade out.
-        for x in 0..width {
-            for y in 0..height {
+    fn generate_test_input(buf: &mut [u8], width: u32, height: u32, i: u32, i_max: u32) {
+        assert_eq!(buf.len(), (width * height * 4) as usize);
+        for y in 0..height {
+            for x in 0..width {
                 let pixel = width * y + x;
                 let index = (pixel * 4) as usize;
-                let color = checkerboard(width, height, x, y);
-                buf[index] = (255.0 * f) as u8;
-                buf[index + 1] = (color.0 as f32 * f) as u8;
-                buf[index + 2] = (color.1 as f32 * f) as u8;
-                buf[index + 3] = (color.2 as f32 * f) as u8;
+                let color = get_color(width, height, x, y, i as f32 / i_max as f32);
+                buf[index] = color.0;
+                buf[index + 1] = color.1;
+                buf[index + 2] = color.2;
+                buf[index + 3] = color.3;
             }
         }
-        buf
     }
 
     #[allow(non_snake_case)]
@@ -84,7 +70,7 @@ mod tests {
         assert!(profile_guids.contains(&profile_guid));
 
         let input_formats = encoder.get_supported_input_formats(encode_guid).unwrap();
-        let buffer_format = NV_ENC_BUFFER_FORMAT_ABGR;
+        let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
         assert!(input_formats.contains(&buffer_format));
 
         let mut preset_config = encoder
@@ -128,12 +114,14 @@ mod tests {
             .open("test.bin")
             .unwrap();
 
-        for i in 0..128 {
+        let mut input_data = vec![0; (WIDTH * HEIGHT * 4) as usize];
+        const FRAMES: u32 = 128;
+        for i in 0..FRAMES {
             let input_buffer = &mut input_buffers[(i % num_bufs) as usize];
             let output_buffer = &mut output_buffers[(i % num_bufs) as usize];
 
-            let input = generate_test_input(WIDTH, HEIGHT, i, 128);
-            input_buffer.write(false, &input).unwrap();
+            generate_test_input(&mut input_data, WIDTH, HEIGHT, i, FRAMES);
+            input_buffer.write(false, &input_data).unwrap();
 
             // TODO: Timestamps?
             encoder
@@ -151,7 +139,6 @@ mod tests {
             // It could also ask for more input data!
             let out = output_buffer.read().unwrap();
             out_file.write_all(out).unwrap();
-            println!("Wrote {} bytes to file", out.len());
         }
 
         // 5.1. Notifying the End of Input Stream
@@ -174,6 +161,5 @@ mod tests {
 
         let out = output_buffer.read().unwrap();
         out_file.write_all(out).unwrap();
-        println!("Wrote {} bytes to file", out.len());
     }
 }
