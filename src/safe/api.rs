@@ -278,16 +278,17 @@ impl EncodeAPI {
         })
     }
 
-    pub fn open_encode_session_with_cuda_context(
+    pub fn open_encode_session_with_cuda(
         &self,
-        cuda_context: CUcontext,
+        cuda_device: Arc<CudaDevice>,
     ) -> EncodeResult<Encoder> {
         let mut encoder = std::ptr::null_mut();
         let mut session_params = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS {
             version: NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
             deviceType: NV_ENC_DEVICE_TYPE::NV_ENC_DEVICE_TYPE_CUDA,
             apiVersion: NVENCAPI_VERSION,
-            device: cuda_context as *mut c_void, // Pass the CUDA Context as the device.
+            // Pass the CUDA Context as the device.
+            device: (*cuda_device.cu_primary_ctx()).cast::<c_void>(),
             ..Default::default()
         };
 
@@ -296,10 +297,10 @@ impl EncodeAPI {
         {
             // We are required to destroy the encoder if there was an error.
             unsafe { (self.destroy_encoder)(encoder) }.result()?;
-            err?
+            err?;
         };
 
-        Ok(Encoder::new(encoder, *self))
+        Ok(Encoder::new(encoder, *self, cuda_device))
     }
 
     // TODO: other encode devices

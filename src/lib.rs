@@ -68,7 +68,7 @@ mod tests {
 
         let encode_api = EncodeAPI::new().unwrap();
         let encoder = encode_api
-            .open_encode_session_with_cuda_context(*cuda_device.cu_primary_ctx())
+            .open_encode_session_with_cuda(cuda_device)
             .unwrap();
 
         let encode_guids = encoder.get_encode_guids().unwrap();

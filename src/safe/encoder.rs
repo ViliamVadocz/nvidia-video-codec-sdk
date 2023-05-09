@@ -1,7 +1,10 @@
 use std::{
     ffi::{c_void, CStr},
     ptr,
+    sync::Arc,
 };
+
+use cudarc::driver::CudaDevice;
 
 use super::{
     api::EncodeAPI,
@@ -29,9 +32,13 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_TUNING_INFO,
 };
 
+type Device = Arc<CudaDevice>;
+
 pub struct Encoder {
     pub(crate) ptr: *mut c_void,
     pub(crate) encode_api: EncodeAPI,
+    #[allow(dead_code)]
+    device: Device, // Used to make sure that CudaDevice stays alive while the Encoder does
 }
 
 impl Drop for Encoder {
@@ -46,8 +53,12 @@ impl Drop for Encoder {
 // TODO: Think about whether we should take `&mut self` for safety.
 
 impl Encoder {
-    pub(crate) fn new(ptr: *mut c_void, encode_api: EncodeAPI) -> Self {
-        Self { ptr, encode_api }
+    pub(crate) fn new(ptr: *mut c_void, encode_api: EncodeAPI, device: Device) -> Self {
+        Self {
+            ptr,
+            encode_api,
+            device,
+        }
     }
 
     pub fn get_last_error_string(&self) -> &CStr {
