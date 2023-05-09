@@ -42,7 +42,7 @@ impl<'a> InputBuffer<'a> {
         // TODO: Find out if pitch is needed and how to use it.
         // let pitch = lock_input_buffer_params.pitch;
 
-        unsafe { data.as_ptr().copy_to(data_ptr as *mut u8, data.len()) };
+        unsafe { data.as_ptr().copy_to(data_ptr.cast::<u8>(), data.len()) };
 
         unsafe { (self.encoder.encode_api.unlock_input_buffer)(self.encoder.ptr, self.ptr) }
             .result()
@@ -85,7 +85,7 @@ impl<'a> OutputBitstream<'a> {
         // Get data.
         let data_ptr = lock_bitstream_buffer_params.bitstreamBufferPtr;
         let data_size = lock_bitstream_buffer_params.bitstreamSizeInBytes as usize;
-        let data = unsafe { std::slice::from_raw_parts_mut(data_ptr as *mut u8, data_size) };
+        let data = unsafe { std::slice::from_raw_parts_mut(data_ptr.cast::<u8>(), data_size) };
 
         // Unlock bitstream.
         unsafe { (self.encoder.encode_api.unlock_bitstream)(self.encoder.ptr, self.ptr) }
@@ -99,6 +99,6 @@ impl Drop for OutputBitstream<'_> {
     fn drop(&mut self) {
         unsafe { (self.encoder.encode_api.destroy_bitstream_buffer)(self.encoder.ptr, self.ptr) }
             .result()
-            .unwrap()
+            .unwrap();
     }
 }

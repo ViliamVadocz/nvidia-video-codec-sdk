@@ -25,18 +25,18 @@ mod tests {
         // Arbitrary value controlling checkerboard size.
         const SKIP: u32 = 160;
         let mut color = (255, 255, 0); // Blue always 0
-        if (y % SKIP < SKIP / 2) != (x % SKIP < SKIP / 2) {
+        if (y % SKIP < SKIP / 2) == (x % SKIP < SKIP / 2) {
+            color.0 = 0;
+            color.1 = 0;
+        } else {
             // Red
             if (x / SKIP) < (width / SKIP / 2) {
-                color.0 = 127
+                color.0 = 127;
             }
             // Green
             if (y / SKIP) < (height / SKIP / 2) {
-                color.1 = 127
+                color.1 = 127;
             }
-        } else {
-            color.0 = 0;
-            color.1 = 0;
         }
         color
     }
@@ -107,8 +107,8 @@ mod tests {
 
         // TODO: In the samples they add a constant "extra output delay" to this,
         // investigate?
-        let num_bufs = preset_config.presetCfg.frameIntervalP
-            + preset_config.presetCfg.rcParams.lookaheadDepth as i32;
+        let num_bufs = preset_config.presetCfg.frameIntervalP as u32
+            + preset_config.presetCfg.rcParams.lookaheadDepth as u32;
 
         let mut input_buffers: Vec<_> = (0..num_bufs)
             .map(|_| {
@@ -132,7 +132,7 @@ mod tests {
             let input_buffer = &mut input_buffers[(i % num_bufs) as usize];
             let output_buffer = &mut output_buffers[(i % num_bufs) as usize];
 
-            let input = generate_test_input(WIDTH, HEIGHT, i as u32, 128);
+            let input = generate_test_input(WIDTH, HEIGHT, i, 128);
             input_buffer.write(false, &input).unwrap();
 
             // TODO: Timestamps?

@@ -61,6 +61,7 @@ impl Encoder {
         }
     }
 
+    #[must_use]
     pub fn get_last_error_string(&self) -> &CStr {
         unsafe { CStr::from_ptr((self.encode_api.get_last_error_string)(self.ptr)) }
     }
@@ -246,6 +247,7 @@ impl Encoder {
 
 // Builder pattern
 impl NV_ENC_INITIALIZE_PARAMS {
+    #[must_use]
     pub fn new(encode_guid: GUID, width: u32, height: u32) -> Self {
         NV_ENC_INITIALIZE_PARAMS {
             version: NV_ENC_INITIALIZE_PARAMS_VER,
@@ -256,28 +258,33 @@ impl NV_ENC_INITIALIZE_PARAMS {
         }
     }
 
+    #[must_use]
     pub fn preset_guid(mut self, preset_guid: GUID) -> Self {
         self.presetGUID = preset_guid;
         self
     }
 
+    #[must_use]
     pub fn encode_config(mut self, encode_config: &mut NV_ENC_CONFIG) -> Self {
         self.encodeConfig = encode_config;
         self
     }
 
+    #[must_use]
     pub fn display_aspect_ratio(mut self, width: u32, height: u32) -> Self {
         self.darWidth = width;
         self.darHeight = height;
         self
     }
 
+    #[must_use]
     pub fn framerate(mut self, numerator: u32, denominator: u32) -> Self {
         self.frameRateNum = numerator;
         self.frameRateDen = denominator;
         self
     }
 
+    #[must_use]
     pub fn enable_picture_type_decision(mut self) -> Self {
         self.enablePTD = 1;
         self
@@ -288,6 +295,7 @@ impl NV_ENC_INITIALIZE_PARAMS {
 
 // Builder pattern
 impl NV_ENC_PIC_PARAMS {
+    #[must_use]
     pub fn new(
         width: u32,
         height: u32,
@@ -310,21 +318,25 @@ impl NV_ENC_PIC_PARAMS {
         }
     }
 
+    #[must_use]
     pub fn pitch(mut self, pitch: u32) -> Self {
         self.inputPitch = pitch;
         self
     }
 
+    #[must_use]
     pub fn frame_id(mut self, frame_id: u32) -> Self {
         self.frameIdx = frame_id;
         self
     }
 
+    #[must_use]
     pub fn codec_pic_params(mut self, codec_pic_params: NV_ENC_CODEC_PIC_PARAMS) -> Self {
         self.codecPicParams = codec_pic_params;
         self
     }
 
+    #[must_use]
     pub fn end_of_stream(mut self) -> Self {
         self.encodePicFlags |= NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32;
         self

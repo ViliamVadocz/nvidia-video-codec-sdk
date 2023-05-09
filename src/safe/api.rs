@@ -1,9 +1,41 @@
-use std::ffi::c_void;
+use std::{ffi::c_void, sync::Arc};
 
-use cudarc::driver::sys::CUcontext;
+use cudarc::driver::CudaDevice;
 
 use super::{encoder::Encoder, result::EncodeResult};
-use crate::sys::nvEncodeAPI::*;
+use crate::sys::nvEncodeAPI::{
+    NvEncodeAPICreateInstance,
+    GUID,
+    NVENCAPI_VERSION,
+    NVENCSTATUS,
+    NV_ENCODE_API_FUNCTION_LIST,
+    NV_ENCODE_API_FUNCTION_LIST_VER,
+    NV_ENC_BUFFER_FORMAT,
+    NV_ENC_CAPS_PARAM,
+    NV_ENC_CREATE_BITSTREAM_BUFFER,
+    NV_ENC_CREATE_INPUT_BUFFER,
+    NV_ENC_CREATE_MV_BUFFER,
+    NV_ENC_CUSTREAM_PTR,
+    NV_ENC_DEVICE_TYPE,
+    NV_ENC_EVENT_PARAMS,
+    NV_ENC_INITIALIZE_PARAMS,
+    NV_ENC_INPUT_PTR,
+    NV_ENC_LOCK_BITSTREAM,
+    NV_ENC_LOCK_INPUT_BUFFER,
+    NV_ENC_MAP_INPUT_RESOURCE,
+    NV_ENC_MEONLY_PARAMS,
+    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
+    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
+    NV_ENC_OUTPUT_PTR,
+    NV_ENC_PIC_PARAMS,
+    NV_ENC_PRESET_CONFIG,
+    NV_ENC_RECONFIGURE_PARAMS,
+    NV_ENC_REGISTERED_PTR,
+    NV_ENC_REGISTER_RESOURCE,
+    NV_ENC_SEQUENCE_PARAM_PAYLOAD,
+    NV_ENC_STAT,
+    NV_ENC_TUNING_INFO,
+};
 
 type OpenEncodeSession = unsafe extern "C" fn(
     device: *mut ::core::ffi::c_void,
