@@ -6067,6 +6067,7 @@ where
         let mask = 1 << bit_index;
         byte & mask == mask
     }
+
     #[inline]
     pub fn set_bit(&mut self, index: usize, val: bool) {
         debug_assert!(index / 8 < self.storage.as_ref().len());
@@ -6084,6 +6085,7 @@ where
             *byte &= !mask;
         }
     }
+
     #[inline]
     pub fn get(&self, bit_offset: usize, bit_width: u8) -> u64 {
         debug_assert!(bit_width <= 64);
@@ -6102,6 +6104,7 @@ where
         }
         val
     }
+
     #[inline]
     pub fn set(&mut self, bit_offset: usize, bit_width: u8, val: u64) {
         debug_assert!(bit_width <= 64);
@@ -6205,6 +6208,7 @@ impl _CUVIDVP8PICPARAMS__bindgen_ty_1__bindgen_ty_1 {
     pub fn frame_type(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_frame_type(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6212,10 +6216,12 @@ impl _CUVIDVP8PICPARAMS__bindgen_ty_1__bindgen_ty_1 {
             self._bitfield_1.set(0usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn version(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(1usize, 3u8) as u8) }
     }
+
     #[inline]
     pub fn set_version(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6223,10 +6229,12 @@ impl _CUVIDVP8PICPARAMS__bindgen_ty_1__bindgen_ty_1 {
             self._bitfield_1.set(1usize, 3u8, val as u64)
         }
     }
+
     #[inline]
     pub fn show_frame(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(4usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_show_frame(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6234,10 +6242,12 @@ impl _CUVIDVP8PICPARAMS__bindgen_ty_1__bindgen_ty_1 {
             self._bitfield_1.set(4usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn update_mb_segmentation_data(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(5usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_update_mb_segmentation_data(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6245,10 +6255,12 @@ impl _CUVIDVP8PICPARAMS__bindgen_ty_1__bindgen_ty_1 {
             self._bitfield_1.set(5usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn Reserved2Bits(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(6usize, 2u8) as u8) }
     }
+
     #[inline]
     pub fn set_Reserved2Bits(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6256,6 +6268,7 @@ impl _CUVIDVP8PICPARAMS__bindgen_ty_1__bindgen_ty_1 {
             self._bitfield_1.set(6usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_1(
         frame_type: ::core::ffi::c_uchar,
@@ -6312,6 +6325,7 @@ impl _CUVIDVP9PICPARAMS {
     pub fn profile(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(0usize, 3u8) as u16) }
     }
+
     #[inline]
     pub fn set_profile(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6319,10 +6333,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(0usize, 3u8, val as u64)
         }
     }
+
     #[inline]
     pub fn frameContextIdx(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(3usize, 2u8) as u16) }
     }
+
     #[inline]
     pub fn set_frameContextIdx(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6330,10 +6346,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(3usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn frameType(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(5usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_frameType(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6341,10 +6359,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(5usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn showFrame(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(6usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_showFrame(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6352,10 +6372,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(6usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn errorResilient(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(7usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_errorResilient(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6363,10 +6385,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(7usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn frameParallelDecoding(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(8usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_frameParallelDecoding(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6374,10 +6398,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(8usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn subSamplingX(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(9usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_subSamplingX(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6385,10 +6411,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(9usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn subSamplingY(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(10usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_subSamplingY(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6396,10 +6424,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(10usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn intraOnly(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(11usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_intraOnly(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6407,10 +6437,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(11usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn allow_high_precision_mv(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(12usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_allow_high_precision_mv(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6418,10 +6450,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(12usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn refreshEntropyProbs(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(13usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_refreshEntropyProbs(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6429,10 +6463,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(13usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reserved2Bits(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(14usize, 2u8) as u16) }
     }
+
     #[inline]
     pub fn set_reserved2Bits(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -6440,6 +6476,7 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_1.set(14usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_1(
         profile: ::core::ffi::c_ushort,
@@ -6508,10 +6545,12 @@ impl _CUVIDVP9PICPARAMS {
         });
         __bindgen_bitfield_unit
     }
+
     #[inline]
     pub fn segmentEnabled(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_2.get(0usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_segmentEnabled(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6519,10 +6558,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_2.set(0usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn segmentMapUpdate(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_2.get(1usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_segmentMapUpdate(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6530,10 +6571,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_2.set(1usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn segmentMapTemporalUpdate(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_2.get(2usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_segmentMapTemporalUpdate(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6541,10 +6584,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_2.set(2usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn segmentFeatureMode(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_2.get(3usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_segmentFeatureMode(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6552,10 +6597,12 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_2.set(3usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reserved4Bits(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_2.get(4usize, 4u8) as u8) }
     }
+
     #[inline]
     pub fn set_reserved4Bits(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6563,6 +6610,7 @@ impl _CUVIDVP9PICPARAMS {
             self._bitfield_2.set(4usize, 4u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_2(
         segmentEnabled: ::core::ffi::c_uchar,
@@ -6601,6 +6649,7 @@ impl _CUVIDAV1PICPARAMS__bindgen_ty_2 {
     pub fn invalid(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_invalid(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6608,10 +6657,12 @@ impl _CUVIDAV1PICPARAMS__bindgen_ty_2 {
             self._bitfield_1.set(0usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn wmtype(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(1usize, 2u8) as u8) }
     }
+
     #[inline]
     pub fn set_wmtype(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6619,10 +6670,12 @@ impl _CUVIDAV1PICPARAMS__bindgen_ty_2 {
             self._bitfield_1.set(1usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reserved5Bits(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(3usize, 5u8) as u8) }
     }
+
     #[inline]
     pub fn set_reserved5Bits(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -6630,6 +6683,7 @@ impl _CUVIDAV1PICPARAMS__bindgen_ty_2 {
             self._bitfield_1.set(3usize, 5u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_1(
         invalid: ::core::ffi::c_uchar,
@@ -6666,6 +6720,7 @@ impl _CUVIDAV1PICPARAMS {
     pub fn profile(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(0usize, 3u8) as u32) }
     }
+
     #[inline]
     pub fn set_profile(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6673,10 +6728,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(0usize, 3u8, val as u64)
         }
     }
+
     #[inline]
     pub fn use_128x128_superblock(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(3usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_use_128x128_superblock(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6684,10 +6741,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(3usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn subsampling_x(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(4usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_subsampling_x(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6695,10 +6754,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(4usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn subsampling_y(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(5usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_subsampling_y(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6706,10 +6767,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(5usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn mono_chrome(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(6usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_mono_chrome(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6717,10 +6780,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(6usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn bit_depth_minus8(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(7usize, 4u8) as u32) }
     }
+
     #[inline]
     pub fn set_bit_depth_minus8(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6728,10 +6793,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(7usize, 4u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_filter_intra(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(11usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_filter_intra(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6739,10 +6806,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(11usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_intra_edge_filter(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(12usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_intra_edge_filter(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6750,10 +6819,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(12usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_interintra_compound(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(13usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_interintra_compound(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6761,10 +6832,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(13usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_masked_compound(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(14usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_masked_compound(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6772,10 +6845,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(14usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_dual_filter(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(15usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_dual_filter(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6783,10 +6858,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(15usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_order_hint(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(16usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_order_hint(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6794,10 +6871,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(16usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn order_hint_bits_minus1(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(17usize, 3u8) as u32) }
     }
+
     #[inline]
     pub fn set_order_hint_bits_minus1(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6805,10 +6884,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(17usize, 3u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_jnt_comp(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(20usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_jnt_comp(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6816,10 +6897,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(20usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_superres(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(21usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_superres(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6827,10 +6910,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(21usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_cdef(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(22usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_cdef(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6838,10 +6923,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(22usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_restoration(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(23usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_restoration(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6849,10 +6936,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(23usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn enable_fgs(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(24usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_enable_fgs(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6860,10 +6949,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(24usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reserved0_7bits(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(25usize, 7u8) as u32) }
     }
+
     #[inline]
     pub fn set_reserved0_7bits(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6871,10 +6962,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(25usize, 7u8, val as u64)
         }
     }
+
     #[inline]
     pub fn frame_type(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(32usize, 2u8) as u32) }
     }
+
     #[inline]
     pub fn set_frame_type(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6882,10 +6975,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(32usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn show_frame(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(34usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_show_frame(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6893,10 +6988,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(34usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn disable_cdf_update(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(35usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_disable_cdf_update(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6904,10 +7001,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(35usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn allow_screen_content_tools(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(36usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_allow_screen_content_tools(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6915,10 +7014,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(36usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn force_integer_mv(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(37usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_force_integer_mv(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6926,10 +7027,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(37usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn coded_denom(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(38usize, 3u8) as u32) }
     }
+
     #[inline]
     pub fn set_coded_denom(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6937,10 +7040,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(38usize, 3u8, val as u64)
         }
     }
+
     #[inline]
     pub fn allow_intrabc(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(41usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_allow_intrabc(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6948,10 +7053,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(41usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn allow_high_precision_mv(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(42usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_allow_high_precision_mv(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6959,10 +7066,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(42usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn interp_filter(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(43usize, 3u8) as u32) }
     }
+
     #[inline]
     pub fn set_interp_filter(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6970,10 +7079,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(43usize, 3u8, val as u64)
         }
     }
+
     #[inline]
     pub fn switchable_motion_mode(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(46usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_switchable_motion_mode(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6981,10 +7092,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(46usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn use_ref_frame_mvs(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(47usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_use_ref_frame_mvs(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -6992,10 +7105,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(47usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn disable_frame_end_update_cdf(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(48usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_disable_frame_end_update_cdf(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7003,10 +7118,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(48usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn delta_q_present(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(49usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_delta_q_present(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7014,10 +7131,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(49usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn delta_q_res(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(50usize, 2u8) as u32) }
     }
+
     #[inline]
     pub fn set_delta_q_res(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7025,10 +7144,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(50usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn using_qmatrix(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(52usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_using_qmatrix(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7036,10 +7157,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(52usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn coded_lossless(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(53usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_coded_lossless(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7047,10 +7170,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(53usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn use_superres(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(54usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_use_superres(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7058,10 +7183,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(54usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn tx_mode(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(55usize, 2u8) as u32) }
     }
+
     #[inline]
     pub fn set_tx_mode(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7069,10 +7196,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(55usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reference_mode(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(57usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_reference_mode(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7080,10 +7209,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(57usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn allow_warped_motion(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(58usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_allow_warped_motion(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7091,10 +7222,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(58usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reduced_tx_set(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(59usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_reduced_tx_set(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7102,10 +7235,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(59usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn skip_mode(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(60usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_skip_mode(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7113,10 +7248,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(60usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reserved1_3bits(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(61usize, 3u8) as u32) }
     }
+
     #[inline]
     pub fn set_reserved1_3bits(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7124,10 +7261,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(61usize, 3u8, val as u64)
         }
     }
+
     #[inline]
     pub fn num_tile_cols(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(64usize, 8u8) as u32) }
     }
+
     #[inline]
     pub fn set_num_tile_cols(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7135,10 +7274,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(64usize, 8u8, val as u64)
         }
     }
+
     #[inline]
     pub fn num_tile_rows(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(72usize, 8u8) as u32) }
     }
+
     #[inline]
     pub fn set_num_tile_rows(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7146,10 +7287,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(72usize, 8u8, val as u64)
         }
     }
+
     #[inline]
     pub fn context_update_tile_id(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(80usize, 16u8) as u32) }
     }
+
     #[inline]
     pub fn set_context_update_tile_id(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -7157,6 +7300,7 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_1.set(80usize, 16u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_1(
         profile: ::core::ffi::c_uint,
@@ -7398,10 +7542,12 @@ impl _CUVIDAV1PICPARAMS {
         });
         __bindgen_bitfield_unit
     }
+
     #[inline]
     pub fn cdef_damping_minus_3(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_2.get(0usize, 2u8) as u8) }
     }
+
     #[inline]
     pub fn set_cdef_damping_minus_3(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7409,10 +7555,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_2.set(0usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn cdef_bits(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_2.get(2usize, 2u8) as u8) }
     }
+
     #[inline]
     pub fn set_cdef_bits(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7420,10 +7568,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_2.set(2usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reserved2_4bits(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_2.get(4usize, 4u8) as u8) }
     }
+
     #[inline]
     pub fn set_reserved2_4bits(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7431,6 +7581,7 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_2.set(4usize, 4u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_2(
         cdef_damping_minus_3: ::core::ffi::c_uchar,
@@ -7452,10 +7603,12 @@ impl _CUVIDAV1PICPARAMS {
         });
         __bindgen_bitfield_unit
     }
+
     #[inline]
     pub fn SkipModeFrame0(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_3.get(0usize, 4u8) as u8) }
     }
+
     #[inline]
     pub fn set_SkipModeFrame0(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7463,10 +7616,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_3.set(0usize, 4u8, val as u64)
         }
     }
+
     #[inline]
     pub fn SkipModeFrame1(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_3.get(4usize, 4u8) as u8) }
     }
+
     #[inline]
     pub fn set_SkipModeFrame1(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7474,6 +7629,7 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_3.set(4usize, 4u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_3(
         SkipModeFrame0: ::core::ffi::c_uchar,
@@ -7490,10 +7646,12 @@ impl _CUVIDAV1PICPARAMS {
         });
         __bindgen_bitfield_unit
     }
+
     #[inline]
     pub fn segmentation_enabled(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_4.get(0usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_segmentation_enabled(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7501,10 +7659,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_4.set(0usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn segmentation_update_map(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_4.get(1usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_segmentation_update_map(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7512,10 +7672,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_4.set(1usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn segmentation_update_data(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_4.get(2usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_segmentation_update_data(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7523,10 +7685,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_4.set(2usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn segmentation_temporal_update(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_4.get(3usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_segmentation_temporal_update(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7534,10 +7698,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_4.set(3usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reserved3_4bits(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_4.get(4usize, 4u8) as u8) }
     }
+
     #[inline]
     pub fn set_reserved3_4bits(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7545,6 +7711,7 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_4.set(4usize, 4u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_4(
         segmentation_enabled: ::core::ffi::c_uchar,
@@ -7579,10 +7746,12 @@ impl _CUVIDAV1PICPARAMS {
         });
         __bindgen_bitfield_unit
     }
+
     #[inline]
     pub fn loop_filter_delta_enabled(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_5.get(0usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_loop_filter_delta_enabled(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7590,10 +7759,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_5.set(0usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn loop_filter_delta_update(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_5.get(1usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_loop_filter_delta_update(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7601,10 +7772,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_5.set(1usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn delta_lf_present(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_5.get(2usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_delta_lf_present(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7612,10 +7785,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_5.set(2usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn delta_lf_res(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_5.get(3usize, 2u8) as u8) }
     }
+
     #[inline]
     pub fn set_delta_lf_res(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7623,10 +7798,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_5.set(3usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn delta_lf_multi(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_5.get(5usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_delta_lf_multi(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7634,10 +7811,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_5.set(5usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reserved4_2bits(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_5.get(6usize, 2u8) as u8) }
     }
+
     #[inline]
     pub fn set_reserved4_2bits(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7645,6 +7824,7 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_5.set(6usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_5(
         loop_filter_delta_enabled: ::core::ffi::c_uchar,
@@ -7683,10 +7863,12 @@ impl _CUVIDAV1PICPARAMS {
         });
         __bindgen_bitfield_unit
     }
+
     #[inline]
     pub fn temporal_layer_id(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_6.get(0usize, 4u8) as u8) }
     }
+
     #[inline]
     pub fn set_temporal_layer_id(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7694,10 +7876,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_6.set(0usize, 4u8, val as u64)
         }
     }
+
     #[inline]
     pub fn spatial_layer_id(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_6.get(4usize, 4u8) as u8) }
     }
+
     #[inline]
     pub fn set_spatial_layer_id(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -7705,6 +7889,7 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_6.set(4usize, 4u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_6(
         temporal_layer_id: ::core::ffi::c_uchar,
@@ -7721,10 +7906,12 @@ impl _CUVIDAV1PICPARAMS {
         });
         __bindgen_bitfield_unit
     }
+
     #[inline]
     pub fn apply_grain(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_7.get(0usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_apply_grain(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -7732,10 +7919,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_7.set(0usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn overlap_flag(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_7.get(1usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_overlap_flag(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -7743,10 +7932,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_7.set(1usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn scaling_shift_minus8(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_7.get(2usize, 2u8) as u16) }
     }
+
     #[inline]
     pub fn set_scaling_shift_minus8(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -7754,10 +7945,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_7.set(2usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn chroma_scaling_from_luma(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_7.get(4usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_chroma_scaling_from_luma(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -7765,10 +7958,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_7.set(4usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn ar_coeff_lag(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_7.get(5usize, 2u8) as u16) }
     }
+
     #[inline]
     pub fn set_ar_coeff_lag(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -7776,10 +7971,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_7.set(5usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn ar_coeff_shift_minus6(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_7.get(7usize, 2u8) as u16) }
     }
+
     #[inline]
     pub fn set_ar_coeff_shift_minus6(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -7787,10 +7984,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_7.set(7usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn grain_scale_shift(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_7.get(9usize, 2u8) as u16) }
     }
+
     #[inline]
     pub fn set_grain_scale_shift(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -7798,10 +7997,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_7.set(9usize, 2u8, val as u64)
         }
     }
+
     #[inline]
     pub fn clip_to_restricted_range(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_7.get(11usize, 1u8) as u16) }
     }
+
     #[inline]
     pub fn set_clip_to_restricted_range(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -7809,10 +8010,12 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_7.set(11usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reserved6_4bits(&self) -> ::core::ffi::c_ushort {
         unsafe { ::core::mem::transmute(self._bitfield_7.get(12usize, 4u8) as u16) }
     }
+
     #[inline]
     pub fn set_reserved6_4bits(&mut self, val: ::core::ffi::c_ushort) {
         unsafe {
@@ -7820,6 +8023,7 @@ impl _CUVIDAV1PICPARAMS {
             self._bitfield_7.set(12usize, 4u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_7(
         apply_grain: ::core::ffi::c_ushort,
@@ -7911,12 +8115,14 @@ impl Default for _CUVIDGETDECODESTATUS {
         }
     }
 }
-pub use self::cudaVideoChromaFormat_enum as cudaVideoChromaFormat;
-pub use self::cudaVideoCodec_enum as cudaVideoCodec;
-pub use self::cudaVideoCreateFlags_enum as cudaVideoCreateFlags;
-pub use self::cudaVideoDeinterlaceMode_enum as cudaVideoDeinterlaceMode;
-pub use self::cudaVideoSurfaceFormat_enum as cudaVideoSurfaceFormat;
-pub use self::cuvidDecodeStatus_enum as cuvidDecodeStatus;
+pub use self::{
+    cudaVideoChromaFormat_enum as cudaVideoChromaFormat,
+    cudaVideoCodec_enum as cudaVideoCodec,
+    cudaVideoCreateFlags_enum as cudaVideoCreateFlags,
+    cudaVideoDeinterlaceMode_enum as cudaVideoDeinterlaceMode,
+    cudaVideoSurfaceFormat_enum as cudaVideoSurfaceFormat,
+    cuvidDecodeStatus_enum as cuvidDecodeStatus,
+};
 extern "C" {
     #[must_use]
     pub fn cuvidGetDecoderCaps(pdc: *mut CUVIDDECODECAPS) -> CUresult;
@@ -7965,3 +8171,4 @@ extern "C" {
     #[must_use]
     pub fn cuvidCtxUnlock(lck: CUvideoctxlock, reserved_flags: ::core::ffi::c_uint) -> CUresult;
 }
+

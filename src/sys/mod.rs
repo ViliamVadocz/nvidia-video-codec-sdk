@@ -4,6 +4,7 @@
 #![allow(clippy::useless_transmute)]
 #![allow(clippy::too_many_arguments)]
 
+mod guid;
 mod version;
 
 #[rustfmt::skip]

@@ -1584,6 +1584,7 @@ where
         let mask = 1 << bit_index;
         byte & mask == mask
     }
+
     #[inline]
     pub fn set_bit(&mut self, index: usize, val: bool) {
         debug_assert!(index / 8 < self.storage.as_ref().len());
@@ -1601,6 +1602,7 @@ where
             *byte &= !mask;
         }
     }
+
     #[inline]
     pub fn get(&self, bit_offset: usize, bit_width: u8) -> u64 {
         debug_assert!(bit_width <= 64);
@@ -1619,6 +1621,7 @@ where
         }
         val
     }
+
     #[inline]
     pub fn set(&mut self, bit_offset: usize, bit_width: u8, val: u64) {
         debug_assert!(bit_width <= 64);
@@ -1641,6 +1644,7 @@ impl CUVIDEOFORMAT__bindgen_ty_4 {
     pub fn video_format(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(0usize, 3u8) as u8) }
     }
+
     #[inline]
     pub fn set_video_format(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -1648,10 +1652,12 @@ impl CUVIDEOFORMAT__bindgen_ty_4 {
             self._bitfield_1.set(0usize, 3u8, val as u64)
         }
     }
+
     #[inline]
     pub fn video_full_range_flag(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(3usize, 1u8) as u8) }
     }
+
     #[inline]
     pub fn set_video_full_range_flag(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -1659,10 +1665,12 @@ impl CUVIDEOFORMAT__bindgen_ty_4 {
             self._bitfield_1.set(3usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn reserved_zero_bits(&self) -> ::core::ffi::c_uchar {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(4usize, 4u8) as u8) }
     }
+
     #[inline]
     pub fn set_reserved_zero_bits(&mut self, val: ::core::ffi::c_uchar) {
         unsafe {
@@ -1670,6 +1678,7 @@ impl CUVIDEOFORMAT__bindgen_ty_4 {
             self._bitfield_1.set(4usize, 4u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_1(
         video_format: ::core::ffi::c_uchar,
@@ -1788,6 +1797,7 @@ impl _CUVIDSOURCEPARAMS {
     pub fn bAnnexb(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_bAnnexb(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -1795,10 +1805,12 @@ impl _CUVIDSOURCEPARAMS {
             self._bitfield_1.set(0usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn uReserved(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(1usize, 31u8) as u32) }
     }
+
     #[inline]
     pub fn set_uReserved(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -1806,6 +1818,7 @@ impl _CUVIDSOURCEPARAMS {
             self._bitfield_1.set(1usize, 31u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_1(
         bAnnexb: ::core::ffi::c_uint,
@@ -1837,6 +1850,7 @@ impl _CUVIDPARSERPARAMS {
     pub fn bAnnexb(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
     }
+
     #[inline]
     pub fn set_bAnnexb(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -1844,10 +1858,12 @@ impl _CUVIDPARSERPARAMS {
             self._bitfield_1.set(0usize, 1u8, val as u64)
         }
     }
+
     #[inline]
     pub fn uReserved(&self) -> ::core::ffi::c_uint {
         unsafe { ::core::mem::transmute(self._bitfield_1.get(1usize, 31u8) as u32) }
     }
+
     #[inline]
     pub fn set_uReserved(&mut self, val: ::core::ffi::c_uint) {
         unsafe {
@@ -1855,6 +1871,7 @@ impl _CUVIDPARSERPARAMS {
             self._bitfield_1.set(1usize, 31u8, val as u64)
         }
     }
+
     #[inline]
     pub fn new_bitfield_1(
         bAnnexb: ::core::ffi::c_uint,
@@ -1913,3 +1930,4 @@ extern "C" {
     #[must_use]
     pub fn cuvidDestroyVideoParser(obj: CUvideoparser) -> CUresult;
 }
+

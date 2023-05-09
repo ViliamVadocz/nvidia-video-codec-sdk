@@ -58,6 +58,7 @@ bindgen `
     --allowlist-var NVENC.* `
     --allowlist-var NV_ENC.* `
     --allowlist-var NV_MAX.* `
+    --blocklist-item NV_ENC_\w+_GUID `
     --blocklist-file .*cuda\.h `
     --blocklist-file .*std.*\.h `
     --must-use-type NVENCSTATUS `
@@ -86,5 +87,6 @@ $(
 ) | Set-Content nvcuvid.rs
 $(
     "pub use super::super::version::*;"
+    "pub use super::super::guid::*;"
     Get-Content nvEncodeAPI.rs -Raw
 ) | Set-Content nvEncodeAPI.rs
