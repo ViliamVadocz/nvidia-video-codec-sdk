@@ -175,7 +175,7 @@ type GetSequenceParamEx = unsafe extern "C" fn(
     sequenceParamPayload: *mut NV_ENC_SEQUENCE_PARAM_PAYLOAD,
 ) -> NVENCSTATUS;
 
-#[allow(dead_code, non_snake_case)]
+#[allow(dead_code)]
 #[derive(Clone, Copy, Debug)]
 pub struct EncodeAPI {
     pub(crate) open_encode_session: OpenEncodeSession,
@@ -183,14 +183,14 @@ pub struct EncodeAPI {
     pub(crate) initialize_encoder: InitializeEncoder,
     pub(crate) reconfigure_encoder: ReconfigureEncoder,
     pub(crate) destroy_encoder: DestroyEncoder,
-    pub(crate) get_encode_GUID_count: GetEncodeGUIDCount,
-    pub(crate) get_encode_GUIDs: GetEncodeGUIDs,
-    pub(crate) get_encode_profile_GUID_count: GetEncodeProfileGUIDCount,
-    pub(crate) get_encode_profile_GUIDs: GetEncodeProfileGUIDs,
+    pub(crate) get_encode_guid_count: GetEncodeGUIDCount,
+    pub(crate) get_encode_guids: GetEncodeGUIDs,
+    pub(crate) get_encode_profile_guid_count: GetEncodeProfileGUIDCount,
+    pub(crate) get_encode_profile_guids: GetEncodeProfileGUIDs,
     pub(crate) get_input_format_count: GetInputFormatCount,
     pub(crate) get_input_formats: GetInputFormats,
     pub(crate) get_encode_preset_count: GetEncodePresetCount,
-    pub(crate) get_encode_preset_GUIDs: GetEncodePresetGUIDs,
+    pub(crate) get_encode_preset_guids: GetEncodePresetGUIDs,
     pub(crate) get_encode_preset_config: GetEncodePresetConfig,
     pub(crate) get_encode_preset_config_ex: GetEncodePresetConfigEx,
     pub(crate) get_encode_caps: GetEncodeCaps,
@@ -206,8 +206,8 @@ pub struct EncodeAPI {
     pub(crate) unmap_input_resource: UnmapInputResource,
     pub(crate) register_resource: RegisterResource,
     pub(crate) unregister_resource: UnregisterResource,
-    pub(crate) create_MV_buffer: CreateMVBuffer,
-    pub(crate) destroy_MV_buffer: DestroyMVBuffer,
+    pub(crate) create_mv_buffer: CreateMVBuffer,
+    pub(crate) destroy_mv_buffer: DestroyMVBuffer,
     pub(crate) encode_picture: EncodePicture,
     pub(crate) get_encode_stats: GetEncodeStats,
     pub(crate) get_sequence_params: GetSequenceParams,
@@ -217,7 +217,7 @@ pub struct EncodeAPI {
     pub(crate) invalidate_ref_frames: InvalidateRefFrames,
     pub(crate) run_motion_estimation_only: RunMotionEstimationOnly,
     pub(crate) get_last_error_string: GetLastErrorString,
-    pub(crate) set_IO_CUDA_streams: SetIOCudaStreams,
+    pub(crate) set_io_cuda_streams: SetIOCudaStreams,
 }
 
 impl EncodeAPI {
@@ -240,14 +240,14 @@ impl EncodeAPI {
             initialize_encoder: function_list.nvEncInitializeEncoder.unwrap(),
             reconfigure_encoder: function_list.nvEncReconfigureEncoder.unwrap(),
             destroy_encoder: function_list.nvEncDestroyEncoder.unwrap(),
-            get_encode_GUID_count: function_list.nvEncGetEncodeGUIDCount.unwrap(),
-            get_encode_GUIDs: function_list.nvEncGetEncodeGUIDs.unwrap(),
-            get_encode_profile_GUID_count: function_list.nvEncGetEncodeProfileGUIDCount.unwrap(),
-            get_encode_profile_GUIDs: function_list.nvEncGetEncodeProfileGUIDs.unwrap(),
+            get_encode_guid_count: function_list.nvEncGetEncodeGUIDCount.unwrap(),
+            get_encode_guids: function_list.nvEncGetEncodeGUIDs.unwrap(),
+            get_encode_profile_guid_count: function_list.nvEncGetEncodeProfileGUIDCount.unwrap(),
+            get_encode_profile_guids: function_list.nvEncGetEncodeProfileGUIDs.unwrap(),
             get_input_format_count: function_list.nvEncGetInputFormatCount.unwrap(),
             get_input_formats: function_list.nvEncGetInputFormats.unwrap(),
             get_encode_preset_count: function_list.nvEncGetEncodePresetCount.unwrap(),
-            get_encode_preset_GUIDs: function_list.nvEncGetEncodePresetGUIDs.unwrap(),
+            get_encode_preset_guids: function_list.nvEncGetEncodePresetGUIDs.unwrap(),
             get_encode_preset_config: function_list.nvEncGetEncodePresetConfig.unwrap(),
             get_encode_preset_config_ex: function_list.nvEncGetEncodePresetConfigEx.unwrap(),
             get_encode_caps: function_list.nvEncGetEncodeCaps.unwrap(),
@@ -263,8 +263,8 @@ impl EncodeAPI {
             unmap_input_resource: function_list.nvEncUnmapInputResource.unwrap(),
             register_resource: function_list.nvEncRegisterResource.unwrap(),
             unregister_resource: function_list.nvEncUnregisterResource.unwrap(),
-            create_MV_buffer: function_list.nvEncCreateMVBuffer.unwrap(),
-            destroy_MV_buffer: function_list.nvEncDestroyMVBuffer.unwrap(),
+            create_mv_buffer: function_list.nvEncCreateMVBuffer.unwrap(),
+            destroy_mv_buffer: function_list.nvEncDestroyMVBuffer.unwrap(),
             encode_picture: function_list.nvEncEncodePicture.unwrap(),
             get_encode_stats: function_list.nvEncGetEncodeStats.unwrap(),
             get_sequence_params: function_list.nvEncGetSequenceParams.unwrap(),
@@ -274,7 +274,7 @@ impl EncodeAPI {
             invalidate_ref_frames: function_list.nvEncInvalidateRefFrames.unwrap(),
             run_motion_estimation_only: function_list.nvEncRunMotionEstimationOnly.unwrap(),
             get_last_error_string: function_list.nvEncGetLastErrorString.unwrap(),
-            set_IO_CUDA_streams: function_list.nvEncSetIOCudaStreams.unwrap(),
+            set_io_cuda_streams: function_list.nvEncSetIOCudaStreams.unwrap(),
         })
     }
 
