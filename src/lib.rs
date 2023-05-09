@@ -5,12 +5,58 @@ pub mod sys;
 mod tests {
     use std::{
         ffi::{c_char, c_int, c_uint, c_void},
+        fs::{File, OpenOptions},
+        io::Write,
         ptr,
     };
 
     use cudarc::driver::sys::*;
 
-    use crate::sys::nvEncodeAPI::*;
+    use crate::sys::nvEncodeAPI::{
+        _NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ABGR,
+        _NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS,
+        *,
+    };
+
+    fn write_test_data(buf: *mut c_void, width: u32, height: u32, i: u32, i_max: u32) {
+        let buf = unsafe {
+            std::slice::from_raw_parts_mut(buf as *mut u8, (width * height * 4) as usize)
+        };
+        let f = 1.0 - (i as f32 / i_max as f32);
+        for x in 0..width {
+            for y in 0..height {
+                let skip = 160; // Arbitrary value controlling checkerboard size
+                let pix = width * y + x;
+                let ind = (pix * 4) as usize;
+                if (y % skip < skip / 2) != (x % skip < skip / 2) {
+                    // We are in a non-black tile, make a color. We make (approximately) each
+                    // quadrant have a different color
+
+                    // Not a very efficient way to fade out, but whatever
+                    buf[ind] = (255.0 * f) as u8; // Alpha
+                    buf[ind + 1] = ((if (x / skip) < (width / skip / 2) {
+                        // Red
+                        127.0
+                    } else {
+                        255.0
+                    }) * f) as u8;
+                    buf[ind + 2] = ((if (y / skip) < (height / skip / 2) {
+                        // Green
+                        127.0
+                    } else {
+                        255.0
+                    }) * f) as u8;
+                    buf[ind + 3] = 0; // Blue
+                } else {
+                    // Black tile, put black
+                    buf[ind] = 255; // Alpha
+                    buf[ind] = 0; // Red
+                    buf[ind] = 0; // Green
+                    buf[ind] = 0; // Blue
+                }
+            }
+        }
+    }
 
     #[allow(non_snake_case)]
     #[test]
@@ -78,7 +124,8 @@ mod tests {
             // let nvEncGetEncodeCaps = function_list.nvEncGetEncodeCaps.unwrap();
             let nvEncGetEncodePresetCount = function_list.nvEncGetEncodePresetCount.unwrap();
             let nvEncGetEncodePresetGUIDs = function_list.nvEncGetEncodePresetGUIDs.unwrap();
-            // let nvEncGetEncodePresetConfig = function_list.nvEncGetEncodePresetConfig.unwrap();
+            // let nvEncGetEncodePresetConfig =
+            // function_list.nvEncGetEncodePresetConfig.unwrap();
             let nvEncInitializeEncoder = function_list.nvEncInitializeEncoder.unwrap();
             let nvEncCreateInputBuffer = function_list.nvEncCreateInputBuffer.unwrap();
             let nvEncDestroyInputBuffer = function_list.nvEncDestroyInputBuffer.unwrap();
@@ -92,11 +139,13 @@ mod tests {
             // let nvEncGetEncodeStats = function_list.nvEncGetEncodeStats.unwrap();
             // let nvEncGetSequenceParams = function_list.nvEncGetSequenceParams.unwrap();
             // let nvEncRegisterAsyncEvent = function_list.nvEncRegisterAsyncEvent.unwrap();
-            // let nvEncUnregisterAsyncEvent = function_list.nvEncUnregisterAsyncEvent.unwrap();
+            // let nvEncUnregisterAsyncEvent =
+            // function_list.nvEncUnregisterAsyncEvent.unwrap();
             // let nvEncMapInputResource = function_list.nvEncMapInputResource.unwrap();
             // let nvEncUnmapInputResource = function_list.nvEncUnmapInputResource.unwrap();
             let nvEncDestroyEncoder = function_list.nvEncDestroyEncoder.unwrap();
-            // let nvEncInvalidateRefFrames = function_list.nvEncInvalidateRefFrames.unwrap();
+            // let nvEncInvalidateRefFrames =
+            // function_list.nvEncInvalidateRefFrames.unwrap();
             let nvEncOpenEncodeSessionEx = function_list.nvEncOpenEncodeSessionEx.unwrap();
             // let nvEncRegisterResource = function_list.nvEncRegisterResource.unwrap();
             // let nvEncUnregisterResource = function_list.nvEncUnregisterResource.unwrap();
@@ -289,11 +338,11 @@ mod tests {
                 "supported formats: {:?}",
                 &supported_formats[..actual_format_count as usize]
             );
-            let buffer_format = supported_formats
+            let buffer_format = NV_ENC_BUFFER_FORMAT_ABGR;
+            assert!(supported_formats
                 .into_iter()
                 .take(actual_format_count as usize)
-                .next()
-                .expect("There should be at least 1 supported format.");
+                .any(|f| f == buffer_format));
 
             // 3.6. Querying encoder Capabilities
             // TODO: idk
@@ -312,7 +361,7 @@ mod tests {
                 frameRateDen: 1,
                 enableEncodeAsync: 0, // We want synchronous mode.
                 enablePTD: 1,         // 3.8.5.2 Picture-type decision.
-                // encodeConfig: &mut preset_config.presetCfg as *mut NV_ENC_CONFIG,
+                encodeConfig: &mut preset_config.presetCfg as *mut NV_ENC_CONFIG,
                 ..Default::default()
             };
             // TODO: Consider further options that are in bitfields
@@ -327,77 +376,162 @@ mod tests {
 
             // 3.9. Creating Resources Required to Hold Input/output Data
 
-            // Allocate input buffer.
-            let mut create_input_buffer_params = NV_ENC_CREATE_INPUT_BUFFER {
-                version: NV_ENC_CREATE_INPUT_BUFFER_VER,
-                width: WIDTH,
-                height: HEIGHT,
-                bufferFmt: buffer_format,
-                inputBuffer: ptr::null_mut(),
-                pSysMemBuffer: ptr::null_mut(), // TODO: How to make a system memory buffer?
-                ..Default::default()
-            };
-            assert_eq!(
-                NVENCSTATUS::NV_ENC_SUCCESS,
-                nvEncCreateInputBuffer(
-                    encoder,
-                    &mut create_input_buffer_params as &mut NV_ENC_CREATE_INPUT_BUFFER,
-                )
-            );
-            let input_buffer = create_input_buffer_params.inputBuffer;
+            // TODO: In the samples they add a constant "extra output delay" to this,
+            // investigate?
+            let num_bufs = preset_config.presetCfg.frameIntervalP
+                + preset_config.presetCfg.rcParams.lookaheadDepth as i32;
 
-            // Allocate output bitstream buffer.
-            let mut create_bitstream_buffer_params = NV_ENC_CREATE_BITSTREAM_BUFFER {
-                version: NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
-                bitstreamBuffer: ptr::null_mut(),
-                ..Default::default()
-            };
-            assert_eq!(
-                NVENCSTATUS::NV_ENC_SUCCESS,
-                nvEncCreateBitstreamBuffer(
-                    encoder,
-                    &mut create_bitstream_buffer_params as *mut NV_ENC_CREATE_BITSTREAM_BUFFER,
-                )
-            );
-            let output_bitstream_buffer = create_bitstream_buffer_params.bitstreamBuffer;
+            // Allocate input buffers.
+            let input_buffers: Vec<_> = (0..num_bufs)
+                .map(|_| {
+                    let mut create_input_buffer_params = NV_ENC_CREATE_INPUT_BUFFER {
+                        version: NV_ENC_CREATE_INPUT_BUFFER_VER,
+                        width: WIDTH,
+                        height: HEIGHT,
+                        bufferFmt: buffer_format,
+                        inputBuffer: ptr::null_mut(),
+                        pSysMemBuffer: ptr::null_mut(), // TODO: How to make a system memory buffer?
+                        ..Default::default()
+                    };
+                    assert_eq!(
+                        NVENCSTATUS::NV_ENC_SUCCESS,
+                        nvEncCreateInputBuffer(
+                            encoder,
+                            &mut create_input_buffer_params as &mut NV_ENC_CREATE_INPUT_BUFFER,
+                        )
+                    );
+                    create_input_buffer_params.inputBuffer
+                })
+                .collect();
+
+            let output_buffers: Vec<_> = (0..num_bufs)
+                .map(|_| {
+                    // Allocate output bitstream buffer.
+                    let mut create_bitstream_buffer_params = NV_ENC_CREATE_BITSTREAM_BUFFER {
+                        version: NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
+                        bitstreamBuffer: ptr::null_mut(),
+                        ..Default::default()
+                    };
+                    assert_eq!(
+                        NVENCSTATUS::NV_ENC_SUCCESS,
+                        nvEncCreateBitstreamBuffer(
+                            encoder,
+                            &mut create_bitstream_buffer_params
+                                as *mut NV_ENC_CREATE_BITSTREAM_BUFFER,
+                        )
+                    );
+                    create_bitstream_buffer_params.bitstreamBuffer
+                })
+                .collect();
 
             // 4.1. Preparing Input Buffers for Encoding
 
-            // Lock input buffer.
-            let mut lock_input_buffer_params = NV_ENC_LOCK_INPUT_BUFFER {
-                version: NV_ENC_LOCK_INPUT_BUFFER_VER,
-                inputBuffer: input_buffer,
-                ..Default::default()
-            };
-            assert_eq!(
-                NVENCSTATUS::NV_ENC_SUCCESS,
-                nvEncLockInputBuffer(
-                    encoder,
-                    &mut lock_input_buffer_params as *mut NV_ENC_LOCK_INPUT_BUFFER,
-                )
-            );
-            let _input_buffer_data = lock_input_buffer_params.bufferDataPtr;
+            let mut out_file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open("test.bin")
+                .unwrap();
 
-            // TODO: Fill input buffer with data.
+            for i in 0..128 {
+                let input_buffer = input_buffers[(i % num_bufs) as usize];
+                let output_buffer = output_buffers[(i % num_bufs) as usize];
 
-            // Unlock input buffer.
-            assert_eq!(
-                NVENCSTATUS::NV_ENC_SUCCESS,
-                nvEncUnlockInputBuffer(encoder, input_buffer)
-            );
+                // Lock input buffer.
+                let mut lock_input_buffer_params = NV_ENC_LOCK_INPUT_BUFFER {
+                    version: NV_ENC_LOCK_INPUT_BUFFER_VER,
+                    inputBuffer: input_buffer,
+                    ..Default::default()
+                };
+                assert_eq!(
+                    NVENCSTATUS::NV_ENC_SUCCESS,
+                    nvEncLockInputBuffer(
+                        encoder,
+                        &mut lock_input_buffer_params as *mut NV_ENC_LOCK_INPUT_BUFFER,
+                    )
+                );
 
-            // 4.3. Submitting Input Frame for Encoding
+                write_test_data(
+                    lock_input_buffer_params.bufferDataPtr,
+                    WIDTH,
+                    HEIGHT,
+                    i as u32,
+                    128,
+                );
 
-            // TODO: Way too many options. Figure it out!
+                // Unlock input buffer.
+                assert_eq!(
+                    NVENCSTATUS::NV_ENC_SUCCESS,
+                    nvEncUnlockInputBuffer(encoder, input_buffer)
+                );
+
+                // 4.3. Submitting Input Frame for Encoding
+
+                // TODO: Way too many options. Figure it out!
+                // TODO: Timestamps?
+                let mut encode_pic_params = NV_ENC_PIC_PARAMS {
+                    version: NV_ENC_PIC_PARAMS_VER,
+                    inputWidth: WIDTH,
+                    inputHeight: HEIGHT,
+                    inputPitch: WIDTH,
+                    // TODO: Which flag should be used when?
+                    encodePicFlags: 0,
+                    inputBuffer: input_buffer,
+                    outputBitstream: output_buffer,
+                    bufferFmt: buffer_format,
+                    pictureStruct: NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
+                    codecPicParams: NV_ENC_CODEC_PIC_PARAMS::default(),
+                    ..Default::default()
+                };
+                assert_eq!(
+                    NVENCSTATUS::NV_ENC_SUCCESS,
+                    nvEncEncodePicture(encoder, &mut encode_pic_params as *mut NV_ENC_PIC_PARAMS)
+                );
+
+                // 4.4. Retrieving Encoded Output
+
+                // Lock output bitstream.
+                let mut lock_bitstream_buffer_params = NV_ENC_LOCK_BITSTREAM {
+                    version: NV_ENC_LOCK_BITSTREAM_VER,
+                    outputBitstream: output_buffer,
+                    ..Default::default()
+                };
+                assert_eq!(
+                    NVENCSTATUS::NV_ENC_SUCCESS,
+                    nvEncLockBitstream(
+                        encoder,
+                        &mut lock_bitstream_buffer_params as *mut NV_ENC_LOCK_BITSTREAM,
+                    )
+                );
+                let _output_buffer_data = lock_bitstream_buffer_params.bitstreamBufferPtr;
+                let _output_buffer_data = std::slice::from_raw_parts_mut(
+                    _output_buffer_data as *mut u8,
+                    lock_bitstream_buffer_params.bitstreamSizeInBytes as usize,
+                );
+
+                out_file.write(_output_buffer_data).unwrap();
+                println!("Wrote {} bytes to file", _output_buffer_data.len());
+
+                // Unlock output bitstream.
+                assert_eq!(
+                    NVENCSTATUS::NV_ENC_SUCCESS,
+                    nvEncUnlockBitstream(encoder, output_buffer)
+                );
+            }
+
+            // 5.1. Notifying the End of Input Stream
+            // Note that output is still generated here
+
+            let output_buffer = output_buffers[0];
+
             let mut encode_pic_params = NV_ENC_PIC_PARAMS {
                 version: NV_ENC_PIC_PARAMS_VER,
                 inputWidth: WIDTH,
                 inputHeight: HEIGHT,
                 inputPitch: WIDTH,
                 // TODO: Which flag should be used when?
-                encodePicFlags: NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32,
-                inputBuffer: input_buffer,
-                outputBitstream: output_bitstream_buffer,
+                encodePicFlags: NV_ENC_PIC_FLAG_EOS as u32,
+                inputBuffer: ptr::null_mut(),
+                outputBitstream: output_buffer,
                 bufferFmt: buffer_format,
                 pictureStruct: NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
                 codecPicParams: NV_ENC_CODEC_PIC_PARAMS::default(),
@@ -408,16 +542,9 @@ mod tests {
                 nvEncEncodePicture(encoder, &mut encode_pic_params as *mut NV_ENC_PIC_PARAMS)
             );
 
-            // 4.4. Retrieving Encoded Output
-
-            /*
-
-            // Lock output bitsream.
-            let mut slice_offsets = [0; 128];
             let mut lock_bitstream_buffer_params = NV_ENC_LOCK_BITSTREAM {
                 version: NV_ENC_LOCK_BITSTREAM_VER,
-                outputBitstream: output_bitstream_buffer,
-                sliceOffsets: slice_offsets.as_mut_ptr(),
+                outputBitstream: output_buffer,
                 ..Default::default()
             };
             assert_eq!(
@@ -428,27 +555,34 @@ mod tests {
                 )
             );
             let _output_buffer_data = lock_bitstream_buffer_params.bitstreamBufferPtr;
+            let _output_buffer_data = std::slice::from_raw_parts_mut(
+                _output_buffer_data as *mut u8,
+                lock_bitstream_buffer_params.bitstreamSizeInBytes as usize,
+            );
 
-            // TODO: Examine output buffer data.
+            out_file.write(_output_buffer_data).unwrap();
+            println!("Finally, wrote {} bytes to file", _output_buffer_data.len());
 
             // Unlock output bitstream.
             assert_eq!(
                 NVENCSTATUS::NV_ENC_SUCCESS,
-                nvEncUnlockBitstream(encoder, output_bitstream_buffer)
+                nvEncUnlockBitstream(encoder, output_buffer)
             );
-
-            */
 
             // 5.2. Releasing Resources
 
-            assert_eq!(
-                NVENCSTATUS::NV_ENC_SUCCESS,
-                nvEncDestroyInputBuffer(encoder, input_buffer)
-            );
-            assert_eq!(
-                NVENCSTATUS::NV_ENC_SUCCESS,
-                nvEncDestroyBitstreamBuffer(encoder, output_bitstream_buffer)
-            );
+            for input_buffer in input_buffers {
+                assert_eq!(
+                    NVENCSTATUS::NV_ENC_SUCCESS,
+                    nvEncDestroyInputBuffer(encoder, input_buffer)
+                );
+            }
+            for output_buffer in output_buffers {
+                assert_eq!(
+                    NVENCSTATUS::NV_ENC_SUCCESS,
+                    nvEncDestroyBitstreamBuffer(encoder, output_buffer)
+                );
+            }
 
             // 5.3. Closing Encode Session
             assert_eq!(NVENCSTATUS::NV_ENC_SUCCESS, nvEncDestroyEncoder(encoder));
