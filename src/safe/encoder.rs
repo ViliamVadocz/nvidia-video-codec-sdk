@@ -1,4 +1,7 @@
-use std::{ffi::c_void, ptr};
+use std::{
+    ffi::{c_void, CStr},
+    ptr,
+};
 
 use super::{
     api::EncodeAPI,
@@ -45,6 +48,10 @@ impl Drop for Encoder {
 impl Encoder {
     pub(crate) fn new(ptr: *mut c_void, encode_api: EncodeAPI) -> Self {
         Self { ptr, encode_api }
+    }
+
+    pub fn get_last_error_string(&self) -> &CStr {
+        unsafe { CStr::from_ptr((self.encode_api.get_last_error_string)(self.ptr)) }
     }
 
     pub fn get_encode_guids(&self) -> EncodeResult<Vec<GUID>> {
