@@ -3,9 +3,9 @@ pub mod sys;
 
 #[cfg(test)]
 mod tests {
-    use std::{fs::OpenOptions, io::Write, ptr};
+    use std::{fs::OpenOptions, io::Write};
 
-    use cudarc::driver::sys::*;
+    use cudarc::driver::CudaDevice;
 
     use crate::{
         safe::api::EncodeAPI,
@@ -51,8 +51,8 @@ mod tests {
                 let color = checkerboard(width, height, x, y);
                 buf[index] = (255.0 * f) as u8;
                 buf[index + 1] = (color.0 as f32 * f) as u8;
-                buf[index + 1] = (color.1 as f32 * f) as u8;
-                buf[index + 1] = (color.2 as f32 * f) as u8;
+                buf[index + 2] = (color.1 as f32 * f) as u8;
+                buf[index + 3] = (color.2 as f32 * f) as u8;
             }
         }
         buf
@@ -64,32 +64,23 @@ mod tests {
         const WIDTH: u32 = 1920;
         const HEIGHT: u32 = 1080;
 
-        // Initialize Cuda Context. (TODO: Handle errors safely.)
-        assert_eq!(CUresult::CUDA_SUCCESS, unsafe { cuInit(0) });
-        let mut cuda_device: CUdevice = 0;
-        assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
-            cuDeviceGet(&mut cuda_device, 0)
-        });
-        let mut cuda_context = ptr::null_mut();
-        assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
-            cuCtxCreate_v2(&mut cuda_context, 0, cuda_device)
-        });
+        let cuda_device = CudaDevice::new(0).unwrap();
 
         let encode_api = EncodeAPI::new().unwrap();
         let encoder = encode_api
-            .open_encode_session_with_cuda_context(cuda_context)
+            .open_encode_session_with_cuda_context(*cuda_device.cu_primary_ctx())
             .unwrap();
 
         let encode_guids = encoder.get_encode_guids().unwrap();
-        let encode_guid = unsafe { NV_ENC_CODEC_H264_GUID };
+        let encode_guid = NV_ENC_CODEC_H264_GUID;
         assert!(encode_guids.contains(&encode_guid));
 
         let preset_guids = encoder.get_preset_guids(encode_guid).unwrap();
-        let preset_guid = unsafe { NV_ENC_PRESET_LOW_LATENCY_HP_GUID };
+        let preset_guid = NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
         assert!(preset_guids.contains(&preset_guid));
 
         let profile_guids = encoder.get_profile_guids(encode_guid).unwrap();
-        let profile_guid = unsafe { NV_ENC_H264_PROFILE_HIGH_GUID };
+        let profile_guid = NV_ENC_H264_PROFILE_HIGH_GUID;
         assert!(profile_guids.contains(&profile_guid));
 
         let input_formats = encoder.get_supported_input_formats(encode_guid).unwrap();
@@ -100,7 +91,7 @@ mod tests {
             .get_preset_config(
                 encode_guid,
                 preset_guid,
-                NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_LOW_LATENCY,
+                NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY,
             )
             .unwrap();
 
@@ -184,15 +175,5 @@ mod tests {
         let out = output_buffer.read().unwrap();
         out_file.write_all(out).unwrap();
         println!("Wrote {} bytes to file", out.len());
-
-        // Manual drop calls because CUDA context has to be destroyed last.
-        drop(input_buffers);
-        drop(output_buffers);
-        drop(encoder);
-
-        // Destroy CUDA Context.
-        assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
-            cuCtxDestroy_v2(cuda_context)
-        });
     }
 }
