@@ -42,173 +42,112 @@ lazy_static! {
 }
 
 type OpenEncodeSession = unsafe extern "C" fn(
-    device: *mut ::core::ffi::c_void,
-    deviceType: u32,
-    encoder: *mut *mut ::core::ffi::c_void,
+    *mut ::core::ffi::c_void,
+    u32,
+    *mut *mut ::core::ffi::c_void,
 ) -> NVENCSTATUS;
-type GetEncodeGUIDCount = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encodeGUIDCount: *mut u32,
-) -> NVENCSTATUS;
-type GetEncodeGUIDs = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    GUIDs: *mut GUID,
-    guidArraySize: u32,
-    GUIDCount: *mut u32,
-) -> NVENCSTATUS;
-type GetInputFormatCount = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encodeGUID: GUID,
-    inputFmtCount: *mut u32,
-) -> NVENCSTATUS;
+type GetEncodeGUIDCount = unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut u32) -> NVENCSTATUS;
+type GetEncodeGUIDs =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut GUID, u32, *mut u32) -> NVENCSTATUS;
+type GetInputFormatCount =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, GUID, *mut u32) -> NVENCSTATUS;
 type GetInputFormats = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encodeGUID: GUID,
-    inputFmts: *mut NV_ENC_BUFFER_FORMAT,
-    inputFmtArraySize: u32,
-    inputFmtCount: *mut u32,
+    *mut ::core::ffi::c_void,
+    GUID,
+    *mut NV_ENC_BUFFER_FORMAT,
+    u32,
+    *mut u32,
 ) -> NVENCSTATUS;
 type GetEncodeCaps = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encodeGUID: GUID,
-    capsParam: *mut NV_ENC_CAPS_PARAM,
-    capsVal: *mut ::core::ffi::c_int,
+    *mut ::core::ffi::c_void,
+    GUID,
+    *mut NV_ENC_CAPS_PARAM,
+    *mut ::core::ffi::c_int,
 ) -> NVENCSTATUS;
-type GetEncodePresetCount = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encodeGUID: GUID,
-    encodePresetGUIDCount: *mut u32,
-) -> NVENCSTATUS;
-type GetEncodePresetGUIDs = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encodeGUID: GUID,
-    presetGUIDs: *mut GUID,
-    guidArraySize: u32,
-    encodePresetGUIDCount: *mut u32,
-) -> NVENCSTATUS;
+type GetEncodePresetCount =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, GUID, *mut u32) -> NVENCSTATUS;
+type GetEncodePresetGUIDs =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, GUID, *mut GUID, u32, *mut u32) -> NVENCSTATUS;
 type GetEncodeProfileGUIDCount = GetEncodePresetCount;
 type GetEncodeProfileGUIDs = GetEncodePresetGUIDs;
 type GetEncodePresetConfig = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encodeGUID: GUID,
-    presetGUID: GUID,
-    presetConfig: *mut NV_ENC_PRESET_CONFIG,
+    *mut ::core::ffi::c_void,
+    GUID,
+    GUID,
+    *mut NV_ENC_PRESET_CONFIG,
 ) -> NVENCSTATUS;
 type GetEncodePresetConfigEx = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encodeGUID: GUID,
-    presetGUID: GUID,
-    tuningInfo: NV_ENC_TUNING_INFO,
-    presetConfig: *mut NV_ENC_PRESET_CONFIG,
+    *mut ::core::ffi::c_void,
+    GUID,
+    GUID,
+    NV_ENC_TUNING_INFO,
+    *mut NV_ENC_PRESET_CONFIG,
 ) -> NVENCSTATUS;
-type InitializeEncoder = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    createEncodeParams: *mut NV_ENC_INITIALIZE_PARAMS,
-) -> NVENCSTATUS;
-type CreateInputBuffer = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    createInputBufferParams: *mut NV_ENC_CREATE_INPUT_BUFFER,
-) -> NVENCSTATUS;
-type DestroyInputBuffer = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    inputBuffer: NV_ENC_INPUT_PTR,
-) -> NVENCSTATUS;
+type InitializeEncoder =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_INITIALIZE_PARAMS) -> NVENCSTATUS;
+type CreateInputBuffer =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_CREATE_INPUT_BUFFER) -> NVENCSTATUS;
+type DestroyInputBuffer =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, NV_ENC_INPUT_PTR) -> NVENCSTATUS;
 type CreateBitstreamBuffer = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    createBitstreamBufferParams: *mut NV_ENC_CREATE_BITSTREAM_BUFFER,
+    *mut ::core::ffi::c_void,
+    *mut NV_ENC_CREATE_BITSTREAM_BUFFER,
 ) -> NVENCSTATUS;
-type DestroyBitstreamBuffer = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    bitstreamBuffer: NV_ENC_OUTPUT_PTR,
-) -> NVENCSTATUS;
-type EncodePicture = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encodePicParams: *mut NV_ENC_PIC_PARAMS,
-) -> NVENCSTATUS;
-type LockBitstream = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    lockBitstreamBufferParams: *mut NV_ENC_LOCK_BITSTREAM,
-) -> NVENCSTATUS;
-type UnlockBitstream = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    bitstreamBuffer: NV_ENC_OUTPUT_PTR,
-) -> NVENCSTATUS;
-type LockInputBuffer = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    lockInputBufferParams: *mut NV_ENC_LOCK_INPUT_BUFFER,
-) -> NVENCSTATUS;
-type UnlockInputBuffer = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    inputBuffer: NV_ENC_INPUT_PTR,
-) -> NVENCSTATUS;
-type GetEncodeStats = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encodeStats: *mut NV_ENC_STAT,
-) -> NVENCSTATUS;
+type DestroyBitstreamBuffer =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, NV_ENC_OUTPUT_PTR) -> NVENCSTATUS;
+type EncodePicture =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_PIC_PARAMS) -> NVENCSTATUS;
+type LockBitstream =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_LOCK_BITSTREAM) -> NVENCSTATUS;
+type UnlockBitstream =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, NV_ENC_OUTPUT_PTR) -> NVENCSTATUS;
+type LockInputBuffer =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_LOCK_INPUT_BUFFER) -> NVENCSTATUS;
+type UnlockInputBuffer =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, NV_ENC_INPUT_PTR) -> NVENCSTATUS;
+type GetEncodeStats =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_STAT) -> NVENCSTATUS;
 type GetSequenceParams = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    sequenceParamPayload: *mut NV_ENC_SEQUENCE_PARAM_PAYLOAD,
+    *mut ::core::ffi::c_void,
+    *mut NV_ENC_SEQUENCE_PARAM_PAYLOAD,
 ) -> NVENCSTATUS;
-type RegisterAsyncEvent = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    eventParams: *mut NV_ENC_EVENT_PARAMS,
-) -> NVENCSTATUS;
-type UnregisterAsyncEvent = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    eventParams: *mut NV_ENC_EVENT_PARAMS,
-) -> NVENCSTATUS;
-type MapInputResource = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    mapInputResParams: *mut NV_ENC_MAP_INPUT_RESOURCE,
-) -> NVENCSTATUS;
-type UnmapInputResource = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    mappedInputBuffer: NV_ENC_INPUT_PTR,
-) -> NVENCSTATUS;
+type RegisterAsyncEvent =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_EVENT_PARAMS) -> NVENCSTATUS;
+type UnregisterAsyncEvent =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_EVENT_PARAMS) -> NVENCSTATUS;
+type MapInputResource =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_MAP_INPUT_RESOURCE) -> NVENCSTATUS;
+type UnmapInputResource =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, NV_ENC_INPUT_PTR) -> NVENCSTATUS;
 type DestroyEncoder = unsafe extern "C" fn(encoder: *mut ::core::ffi::c_void) -> NVENCSTATUS;
-type InvalidateRefFrames = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    invalidRefFrameTimeStamp: u64,
-) -> NVENCSTATUS;
+type InvalidateRefFrames = unsafe extern "C" fn(*mut ::core::ffi::c_void, u64) -> NVENCSTATUS;
 type OpenEncodeSessionEx = unsafe extern "C" fn(
-    openSessionExParams: *mut NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
-    encoder: *mut *mut ::core::ffi::c_void,
+    *mut NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
+    *mut *mut ::core::ffi::c_void,
 ) -> NVENCSTATUS;
-type RegisterResource = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    registerResParams: *mut NV_ENC_REGISTER_RESOURCE,
-) -> NVENCSTATUS;
-type UnregisterResource = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    registeredRes: NV_ENC_REGISTERED_PTR,
-) -> NVENCSTATUS;
-type ReconfigureEncoder = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    reInitEncodeParams: *mut NV_ENC_RECONFIGURE_PARAMS,
-) -> NVENCSTATUS;
-type CreateMVBuffer = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    createMVBufferParams: *mut NV_ENC_CREATE_MV_BUFFER,
-) -> NVENCSTATUS;
-type DestroyMVBuffer = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    mvBuffer: NV_ENC_OUTPUT_PTR,
-) -> NVENCSTATUS;
-type RunMotionEstimationOnly = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    meOnlyParams: *mut NV_ENC_MEONLY_PARAMS,
-) -> NVENCSTATUS;
+type RegisterResource =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_REGISTER_RESOURCE) -> NVENCSTATUS;
+type UnregisterResource =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, NV_ENC_REGISTERED_PTR) -> NVENCSTATUS;
+type ReconfigureEncoder =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_RECONFIGURE_PARAMS) -> NVENCSTATUS;
+type CreateMVBuffer =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_CREATE_MV_BUFFER) -> NVENCSTATUS;
+type DestroyMVBuffer =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, NV_ENC_OUTPUT_PTR) -> NVENCSTATUS;
+type RunMotionEstimationOnly =
+    unsafe extern "C" fn(*mut ::core::ffi::c_void, *mut NV_ENC_MEONLY_PARAMS) -> NVENCSTATUS;
 type GetLastErrorString =
     unsafe extern "C" fn(encoder: *mut ::core::ffi::c_void) -> *const ::core::ffi::c_char;
 type SetIOCudaStreams = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    inputStream: NV_ENC_CUSTREAM_PTR,
-    outputStream: NV_ENC_CUSTREAM_PTR,
+    *mut ::core::ffi::c_void,
+    NV_ENC_CUSTREAM_PTR,
+    NV_ENC_CUSTREAM_PTR,
 ) -> NVENCSTATUS;
 type GetSequenceParamEx = unsafe extern "C" fn(
-    encoder: *mut ::core::ffi::c_void,
-    encInitParams: *mut NV_ENC_INITIALIZE_PARAMS,
-    sequenceParamPayload: *mut NV_ENC_SEQUENCE_PARAM_PAYLOAD,
+    *mut ::core::ffi::c_void,
+    *mut NV_ENC_INITIALIZE_PARAMS,
+    *mut NV_ENC_SEQUENCE_PARAM_PAYLOAD,
 ) -> NVENCSTATUS;
 
 #[allow(dead_code)]
