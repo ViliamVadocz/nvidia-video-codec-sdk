@@ -1,5 +1,3 @@
-extern crate bindgen;
-
 use std::path::PathBuf;
 
 // https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/

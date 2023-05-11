@@ -1,14 +1,18 @@
 pub mod safe;
 pub mod sys;
 
+#[macro_use]
+extern crate lazy_static;
+
 #[cfg(test)]
 mod tests {
     use std::{fs::OpenOptions, io::Write};
 
     use cudarc::driver::CudaDevice;
 
+    #[allow(deprecated)]
     use crate::{
-        safe::api::EncodeAPI,
+        safe::api::ENCODE_API,
         sys::nvEncodeAPI::{
             NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
             NV_ENC_CODEC_H264_GUID,
@@ -52,8 +56,7 @@ mod tests {
 
         let cuda_device = CudaDevice::new(0).unwrap();
 
-        let encode_api = EncodeAPI::new().unwrap();
-        let encoder = encode_api
+        let encoder = ENCODE_API
             .open_encode_session_with_cuda(cuda_device)
             .unwrap();
 
@@ -62,6 +65,7 @@ mod tests {
         assert!(encode_guids.contains(&encode_guid));
 
         let preset_guids = encoder.get_preset_guids(encode_guid).unwrap();
+        #[allow(deprecated)]
         let preset_guid = NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
         assert!(preset_guids.contains(&preset_guid));
 
@@ -150,7 +154,7 @@ mod tests {
                 NV_ENC_PIC_PARAMS::new(
                     WIDTH,
                     HEIGHT,
-                    &input_buffers[0],
+                    &mut input_buffers[0],
                     output_buffer,
                     buffer_format,
                     NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,

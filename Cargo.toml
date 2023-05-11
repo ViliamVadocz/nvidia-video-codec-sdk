@@ -7,6 +7,4 @@ edition = "2021"
 
 [dependencies]
 cudarc = "0.9.9"
-
-[build-dependencies]
-bindgen = "0.65.1"
+lazy_static = "1.4.0"

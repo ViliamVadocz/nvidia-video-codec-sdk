@@ -1,6 +1,6 @@
 use std::ffi::c_void;
 
-use super::{encoder::Encoder, result::EncodeResult};
+use super::{api::ENCODE_API, encoder::Encoder, result::EncodeResult};
 use crate::sys::nvEncodeAPI::{
     NV_ENC_LOCK_BITSTREAM,
     NV_ENC_LOCK_BITSTREAM_VER,
@@ -30,13 +30,8 @@ impl<'a> InputBuffer<'a> {
         if do_not_wait {
             lock_input_buffer_params.set_doNotWait(1);
         }
-        unsafe {
-            (self.encoder.encode_api.lock_input_buffer)(
-                self.encoder.ptr,
-                &mut lock_input_buffer_params,
-            )
-        }
-        .result()?;
+        unsafe { (ENCODE_API.lock_input_buffer)(self.encoder.ptr, &mut lock_input_buffer_params) }
+            .result()?;
 
         let data_ptr = lock_input_buffer_params.bufferDataPtr;
         // TODO: Find out if pitch is needed and how to use it.
@@ -44,14 +39,13 @@ impl<'a> InputBuffer<'a> {
 
         unsafe { data.as_ptr().copy_to(data_ptr.cast::<u8>(), data.len()) };
 
-        unsafe { (self.encoder.encode_api.unlock_input_buffer)(self.encoder.ptr, self.ptr) }
-            .result()
+        unsafe { (ENCODE_API.unlock_input_buffer)(self.encoder.ptr, self.ptr) }.result()
     }
 }
 
 impl Drop for InputBuffer<'_> {
     fn drop(&mut self) {
-        unsafe { (self.encoder.encode_api.destroy_input_buffer)(self.encoder.ptr, self.ptr) }
+        unsafe { (ENCODE_API.destroy_input_buffer)(self.encoder.ptr, self.ptr) }
             .result()
             .unwrap();
     }
@@ -74,13 +68,8 @@ impl<'a> OutputBitstream<'a> {
             outputBitstream: self.ptr,
             ..Default::default()
         };
-        unsafe {
-            (self.encoder.encode_api.lock_bitstream)(
-                self.encoder.ptr,
-                &mut lock_bitstream_buffer_params,
-            )
-        }
-        .result()?;
+        unsafe { (ENCODE_API.lock_bitstream)(self.encoder.ptr, &mut lock_bitstream_buffer_params) }
+            .result()?;
 
         // Get data.
         let data_ptr = lock_bitstream_buffer_params.bitstreamBufferPtr;
@@ -88,8 +77,7 @@ impl<'a> OutputBitstream<'a> {
         let data = unsafe { std::slice::from_raw_parts_mut(data_ptr.cast::<u8>(), data_size) };
 
         // Unlock bitstream.
-        unsafe { (self.encoder.encode_api.unlock_bitstream)(self.encoder.ptr, self.ptr) }
-            .result()?;
+        unsafe { (ENCODE_API.unlock_bitstream)(self.encoder.ptr, self.ptr) }.result()?;
 
         Ok(data)
     }
@@ -97,7 +85,7 @@ impl<'a> OutputBitstream<'a> {
 
 impl Drop for OutputBitstream<'_> {
     fn drop(&mut self) {
-        unsafe { (self.encoder.encode_api.destroy_bitstream_buffer)(self.encoder.ptr, self.ptr) }
+        unsafe { (ENCODE_API.destroy_bitstream_buffer)(self.encoder.ptr, self.ptr) }
             .result()
             .unwrap();
     }

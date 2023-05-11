@@ -37,6 +37,10 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_TUNING_INFO,
 };
 
+lazy_static! {
+    pub static ref ENCODE_API: EncodeAPI = EncodeAPI::new().unwrap();
+}
+
 type OpenEncodeSession = unsafe extern "C" fn(
     device: *mut ::core::ffi::c_void,
     deviceType: u32,
@@ -253,7 +257,7 @@ pub struct EncodeAPI {
 }
 
 impl EncodeAPI {
-    pub fn new() -> EncodeResult<Self> {
+    fn new() -> EncodeResult<Self> {
         // Create empty function buffer.
         let mut function_list = NV_ENCODE_API_FUNCTION_LIST {
             version: NV_ENCODE_API_FUNCTION_LIST_VER,
@@ -332,7 +336,7 @@ impl EncodeAPI {
             err?;
         };
 
-        Ok(Encoder::new(encoder, *self, cuda_device))
+        Ok(Encoder::new(encoder, cuda_device))
     }
 
     // TODO: other encode devices
