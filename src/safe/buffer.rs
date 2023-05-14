@@ -1,4 +1,4 @@
-use std::ffi::c_void;
+use std::{ffi::c_void, io};
 
 use super::{api::ENCODE_API, encoder::Encoder, result::EncodeResult};
 use crate::sys::nvEncodeAPI::{
@@ -8,20 +8,25 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_LOCK_INPUT_BUFFER_VER,
 };
 
-// TODO:
-// Maybe implement Read/Write for the buffers?
+pub trait EncoderInput {
+    fn handle(&mut self) -> *mut c_void;
+}
 
-pub struct InputBuffer<'a> {
+pub trait EncoderOutput {
+    fn handle(&mut self) -> *mut c_void;
+}
+
+pub struct Buffer<'a> {
     pub(crate) ptr: *mut c_void,
     encoder: &'a Encoder,
 }
 
-impl<'a> InputBuffer<'a> {
+impl<'a> Buffer<'a> {
     pub(crate) fn new(ptr: *mut c_void, encoder: &'a Encoder) -> Self {
         Self { ptr, encoder }
     }
 
-    pub fn write(&mut self, do_not_wait: bool, data: &[u8]) -> EncodeResult<()> {
+    pub fn lock_and_write(&mut self, do_not_wait: bool, data: &[u8]) -> EncodeResult<()> {
         let mut lock_input_buffer_params = NV_ENC_LOCK_INPUT_BUFFER {
             version: NV_ENC_LOCK_INPUT_BUFFER_VER,
             inputBuffer: self.ptr,
@@ -43,7 +48,7 @@ impl<'a> InputBuffer<'a> {
     }
 }
 
-impl Drop for InputBuffer<'_> {
+impl Drop for Buffer<'_> {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.destroy_input_buffer)(self.encoder.ptr, self.ptr) }
             .result()
@@ -51,17 +56,33 @@ impl Drop for InputBuffer<'_> {
     }
 }
 
-pub struct OutputBitstream<'a> {
+impl io::Write for Buffer<'_> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.lock_and_write(false, buf).into()
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+impl EncoderInput for Buffer<'_> {
+    fn handle(&self) -> *mut c_void {
+        self.ptr
+    }
+}
+
+pub struct Bitstream<'a> {
     pub(crate) ptr: *mut c_void,
     encoder: &'a Encoder,
 }
 
-impl<'a> OutputBitstream<'a> {
+impl<'a> Bitstream<'a> {
     pub(crate) fn new(ptr: *mut c_void, encoder: &'a Encoder) -> Self {
         Self { ptr, encoder }
     }
 
-    pub fn read(&mut self) -> EncodeResult<&[u8]> {
+    pub fn lock_and_read(&mut self) -> EncodeResult<&[u8]> {
         // Lock bitstream.
         let mut lock_bitstream_buffer_params = NV_ENC_LOCK_BITSTREAM {
             version: NV_ENC_LOCK_BITSTREAM_VER,
@@ -83,10 +104,57 @@ impl<'a> OutputBitstream<'a> {
     }
 }
 
-impl Drop for OutputBitstream<'_> {
+impl Drop for Bitstream<'_> {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.destroy_bitstream_buffer)(self.encoder.ptr, self.ptr) }
             .result()
             .unwrap();
+    }
+}
+
+impl io::Read for Bitstream<'_> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.lock_and_read().into()
+    }
+}
+
+impl EncoderOutput for Bitstream<'_> {
+    fn handle(&self) -> *mut c_void {
+        self.ptr
+    }
+}
+
+pub struct MappedResource<'a> {
+    pub(crate) reg_ptr: *mut c_void,
+    pub(crate) map_ptr: *mut c_void,
+    encoder: &'a Encoder,
+}
+
+impl<'a> MappedResource<'a> {
+    pub(crate) fn new(reg_ptr: *mut c_void, map_ptr: *mut c_void, encoder: &'a Encoder) -> Self {
+        MappedResource {
+            reg_ptr,
+            map_ptr,
+            encoder,
+        }
+    }
+}
+
+impl Drop for MappedResource<'_> {
+    fn drop(&mut self) {
+        // Unmapping resource.
+        unsafe { (ENCODE_API.unmap_input_resource)(self.encoder.ptr, self.map_ptr) }
+            .result()
+            .unwrap();
+        // Unregister resource.
+        unsafe { (ENCODE_API.unregister_resource)(self.encoder.ptr, self.reg_ptr) }
+            .result()
+            .unwrap();
+    }
+}
+
+impl EncoderInput for MappedResource {
+    fn handle(&self) -> *mut c_void {
+        self.map_ptr
     }
 }

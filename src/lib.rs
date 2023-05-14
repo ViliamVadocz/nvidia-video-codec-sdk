@@ -8,16 +8,29 @@ extern crate lazy_static;
 mod tests {
     use std::{fs::OpenOptions, io::Write};
 
-    use cudarc::driver::CudaDevice;
+    use cudarc::driver::{
+        sys::{cuMemImportFromShareableHandle, CUmemAllocationHandleType},
+        CudaDevice,
+    };
+    use dma_buf::DmaBuf;
 
+    use crate::sys::nvEncodeAPI::{
+        NV_ENC_MAP_INPUT_RESOURCE,
+        NV_ENC_MAP_INPUT_RESOURCE_VER,
+        NV_ENC_REGISTER_RESOURCE,
+        NV_ENC_REGISTER_RESOURCE_VER,
+    };
     #[allow(deprecated)]
     use crate::{
         safe::api::ENCODE_API,
         sys::nvEncodeAPI::{
+            NV_ENC_BUFFER_FORMAT,
             NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
+            NV_ENC_BUFFER_USAGE,
             NV_ENC_CODEC_H264_GUID,
             NV_ENC_H264_PROFILE_HIGH_GUID,
             NV_ENC_INITIALIZE_PARAMS,
+            NV_ENC_INPUT_RESOURCE_TYPE,
             NV_ENC_PIC_PARAMS,
             NV_ENC_PIC_STRUCT,
             NV_ENC_PRESET_LOW_LATENCY_HP_GUID,
@@ -57,7 +70,7 @@ mod tests {
         let cuda_device = CudaDevice::new(0).unwrap();
 
         let encoder = ENCODE_API
-            .open_encode_session_with_cuda(cuda_device)
+            .open_encode_session_with_cuda(cuda_device.clone())
             .unwrap();
 
         let encode_guids = encoder.get_encode_guids().unwrap();
@@ -95,6 +108,38 @@ mod tests {
             )
             .unwrap();
 
+        //
+
+        // 4.1.2. Input buffers allocated externally
+
+        // TODO: Get a valid DMABuf for testing
+
+        // let cuda_slice = cuda_device
+        //     .alloc_zeros((WIDTH * HEIGHT * 4) as usize)
+        //     .unwrap();
+        // let dma_buf = DmaBuf::default();
+        // let mut handle = 0;
+        // assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
+        //     cuMemImportFromShareableHandle(
+        //         &mut handle,
+        //         dma_buf.as_raw_fd(),
+        //         CUmemAllocationHandleType::CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR,
+        //     )
+        // });
+
+        // TODO: Take that DMABuf and register it as a resource.
+
+        let (input_resource, buf_fmt) = encoder.register_and_map_input_resource(NV_ENC_REGISTER_RESOURCE::new(
+            NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDAARRAY, // TODO: try NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
+            WIDTH,
+            HEIGHT,
+            todo!(),
+            buffer_format,
+        )).unwrap();
+        assert_eq!(buffer_format, buf_fmt);
+
+        //
+
         // TODO: In the samples they add a constant "extra output delay" to this,
         // investigate?
         let num_bufs = preset_config.presetCfg.frameIntervalP as u32
@@ -125,7 +170,7 @@ mod tests {
             let output_buffer = &mut output_buffers[(i % num_bufs) as usize];
 
             generate_test_input(&mut input_data, WIDTH, HEIGHT, i, FRAMES);
-            input_buffer.write(false, &input_data).unwrap();
+            input_buffer.write(&input_data).unwrap();
 
             // TODO: Timestamps?
             encoder

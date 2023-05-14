@@ -8,12 +8,13 @@ use cudarc::driver::CudaDevice;
 
 use super::{
     api::ENCODE_API,
-    buffer::{InputBuffer, OutputBitstream},
+    buffer::{Bitstream, Buffer, EncoderInput, EncoderOutput, MappedResource},
     result::EncodeResult,
 };
 use crate::sys::nvEncodeAPI::{
     GUID,
     NV_ENC_BUFFER_FORMAT,
+    NV_ENC_BUFFER_USAGE,
     NV_ENC_CODEC_PIC_PARAMS,
     NV_ENC_CONFIG,
     NV_ENC_CONFIG_VER,
@@ -23,12 +24,17 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_CREATE_INPUT_BUFFER_VER,
     NV_ENC_INITIALIZE_PARAMS,
     NV_ENC_INITIALIZE_PARAMS_VER,
+    NV_ENC_INPUT_RESOURCE_TYPE,
+    NV_ENC_MAP_INPUT_RESOURCE,
+    NV_ENC_MAP_INPUT_RESOURCE_VER,
     NV_ENC_PIC_FLAGS,
     NV_ENC_PIC_PARAMS,
     NV_ENC_PIC_PARAMS_VER,
     NV_ENC_PIC_STRUCT,
     NV_ENC_PRESET_CONFIG,
     NV_ENC_PRESET_CONFIG_VER,
+    NV_ENC_REGISTER_RESOURCE,
+    NV_ENC_REGISTER_RESOURCE_VER,
     NV_ENC_TUNING_INFO,
 };
 
@@ -159,7 +165,7 @@ impl Encoder {
         width: u32,
         height: u32,
         buffer_format: NV_ENC_BUFFER_FORMAT,
-    ) -> EncodeResult<InputBuffer> {
+    ) -> EncodeResult<Buffer> {
         let mut create_input_buffer_params = NV_ENC_CREATE_INPUT_BUFFER {
             version: NV_ENC_CREATE_INPUT_BUFFER_VER,
             width,
@@ -177,7 +183,7 @@ impl Encoder {
         ))
     }
 
-    pub fn create_output_bitstream(&self) -> EncodeResult<OutputBitstream> {
+    pub fn create_output_bitstream(&self) -> EncodeResult<Bitstream> {
         let mut create_bitstream_buffer_params = NV_ENC_CREATE_BITSTREAM_BUFFER {
             version: NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
             bitstreamBuffer: ptr::null_mut(),
@@ -190,6 +196,41 @@ impl Encoder {
         Ok(OutputBitstream::new(
             create_bitstream_buffer_params.bitstreamBuffer,
             self,
+        ))
+    }
+
+    pub fn register_and_map_input_resource(
+        &self,
+        mut register_resource_params: NV_ENC_REGISTER_RESOURCE,
+    ) -> EncodeResult<(MappedResource, NV_ENC_BUFFER_FORMAT)> {
+        assert_eq!(
+            register_resource_params.bufferUsage,
+            NV_ENC_BUFFER_USAGE::NV_ENC_INPUT_IMAGE
+        );
+
+        // Register resource.
+        unsafe {
+            (ENCODE_API.register_resource)(encoder.ptr, &mut register_resource_params);
+        }
+        .result()?;
+        let registered_resource = register_resource_params.registeredResource;
+
+        // Map resource.
+        let mut map_input_resource_params = NV_ENC_MAP_INPUT_RESOURCE {
+            version: NV_ENC_MAP_INPUT_RESOURCE_VER,
+            registeredResource: registered_resource,
+            mappedResource: str::ptr::null_mut(),
+            mappedBufferFmt: NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_UNDEFINED,
+            ..Default::default()
+        };
+        unsafe { (ENCODE_API.map_input_resource)(encoder.ptr, &mut map_input_resource_params) }
+            .result()?;
+
+        let mapped_resource = map_input_resource_params.mappedResource;
+        let input_buffer_format = map_input_resource_params.mappedBufferFmt;
+        Ok((
+            MappedResource::new(registered_resource, mapped_resource, self),
+            input_buffer_format,
         ))
     }
 
@@ -283,11 +324,11 @@ impl NV_ENC_INITIALIZE_PARAMS {
 // Builder pattern
 impl NV_ENC_PIC_PARAMS {
     #[must_use]
-    pub fn new(
+    pub fn new<INPUT: EncoderInput, OUTPUT: EncoderOutput>(
         width: u32,
         height: u32,
-        input_buffer: &mut InputBuffer,
-        output_bitstream: &mut OutputBitstream,
+        input_buffer: &mut INPUT,
+        output_bitstream: &mut OUTPUT,
         buffer_format: NV_ENC_BUFFER_FORMAT,
         picture_struct: NV_ENC_PIC_STRUCT,
     ) -> Self {
@@ -297,8 +338,8 @@ impl NV_ENC_PIC_PARAMS {
             inputHeight: height,
             inputPitch: width,
             // TODO: Which flag should be used when?
-            inputBuffer: input_buffer.ptr,
-            outputBitstream: output_bitstream.ptr,
+            inputBuffer: input_buffer.handle(),
+            outputBitstream: output_bitstream.handle(),
             bufferFmt: buffer_format,
             pictureStruct: picture_struct,
             ..Default::default()
@@ -326,6 +367,43 @@ impl NV_ENC_PIC_PARAMS {
     #[must_use]
     pub fn end_of_stream(mut self) -> Self {
         self.encodePicFlags |= NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32;
+        self
+    }
+
+    // TODO: Add other options
+}
+
+// Builder pattern
+impl NV_ENC_REGISTER_RESOURCE {
+    #[must_use]
+    pub fn new(
+        resource_type: NV_ENC_INPUT_RESOURCE_TYPE,
+        width: u32,
+        height: u32,
+        resource_to_register: *mut c_void,
+        buffer_format: NV_ENC_BUFFER_FORMAT,
+    ) -> Self {
+        NV_ENC_REGISTER_RESOURCE {
+            version: NV_ENC_REGISTER_RESOURCE_VER,
+            resourceType: resource_type,
+            width,
+            height,
+            pitch: width,
+            resourceToRegister: resource_to_register,
+            registeredResource: std::ptr::null_mut(),
+            bufferFormat: buffer_format,
+            ..Default::default()
+        }
+    }
+
+    #[must_use]
+    pub fn pitch(mut self, pitch: u32) -> Self {
+        self.pitch = pitch;
+        self
+    }
+
+    pub fn buffer_usage(mut self, buffer_usage: NV_ENC_BUFFER_USAGE) -> Self {
+        self.bufferUsage = buffer_usage;
         self
     }
 

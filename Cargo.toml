@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 cudarc = "0.9.9"
 lazy_static = "1.4.0"
+dma-buf = "0.3.0"
