@@ -15,7 +15,12 @@ mod tests {
     use vulkano::{
         device::{Device, DeviceCreateInfo, QueueCreateInfo},
         instance::{Instance, InstanceCreateInfo},
-        memory::{DeviceMemory, MemoryAllocateInfo},
+        memory::{
+            DeviceMemory,
+            ExternalMemoryHandleType,
+            ExternalMemoryHandleTypes,
+            MemoryAllocateInfo,
+        },
         VulkanLibrary,
     };
 
@@ -131,11 +136,12 @@ mod tests {
         let memory = DeviceMemory::allocate(vulkan_device, MemoryAllocateInfo {
             allocation_size: (WIDTH * HEIGHT * 4) as u64,
             memory_type_index: 0,
+            export_handle_types: ExternalMemoryHandleTypes::OPAQUE_FD,
             ..Default::default()
         })
         .unwrap();
         let file = memory
-            .export_fd(vulkano::memory::ExternalMemoryHandleType::DmaBuf)
+            .export_fd(ExternalMemoryHandleType::OpaqueFd)
             .unwrap();
 
         // Import POSIX Fd with CUDA.
