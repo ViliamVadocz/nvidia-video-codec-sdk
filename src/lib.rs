@@ -135,7 +135,7 @@ mod tests {
         })
         .unwrap();
         let file = memory
-            .export_fd(vulkano::memory::ExternalMemoryHandleType::OpaqueFd)
+            .export_fd(vulkano::memory::ExternalMemoryHandleType::DmaBuf)
             .unwrap();
 
         // Import POSIX Fd with CUDA.
