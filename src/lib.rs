@@ -130,6 +130,7 @@ mod tests {
         let _queue = queues.next().unwrap();
         let memory = DeviceMemory::allocate(vulkan_device, MemoryAllocateInfo {
             allocation_size: (WIDTH * HEIGHT * 4) as u64,
+            memory_type_index: 0,
             ..Default::default()
         })
         .unwrap();
