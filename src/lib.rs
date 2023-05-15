@@ -9,10 +9,20 @@ mod tests {
     use std::{fs::OpenOptions, io::Write};
 
     use cudarc::driver::{
-        sys::{cuMemImportFromShareableHandle, CUmemAllocationHandleType},
+        sys::{
+            cuMemExportToShareableHandle,
+            cuMemImportFromShareableHandle,
+            CUmemAllocationHandleType,
+        },
         CudaDevice,
     };
     use dma_buf::DmaBuf;
+    use vulkano::{
+        device::QueueCreateInfo,
+        instance::{Instance, InstanceCreateInfo},
+        memory::{DeviceMemory, MemoryAllocateInfo},
+        VulkanLibrary,
+    };
 
     use crate::sys::nvEncodeAPI::{
         NV_ENC_MAP_INPUT_RESOURCE,
@@ -108,37 +118,57 @@ mod tests {
             )
             .unwrap();
 
-        //
+        // ---
 
         // 4.1.2. Input buffers allocated externally
 
-        // TODO: Get a valid DMABuf for testing
+        // Allocate memory with Vulkan and export it as a POSIX Fd.
+        let vulkan_library = VulkanLibrary::new().unwrap();
+        let instance = Instance::new(
+            vulkan_library,
+            InstanceCreateInfo::application_from_cargo_toml(),
+        )
+        .unwrap();
+        let physical_device = instance
+            .enumerate_physical_devices()
+            .unwrap()
+            .next()
+            .unwrap();
+        let vulkan_device = Device::new(physical_device, DeviceCreateInfo {
+            queue_create_infos: vec![QueueCreateInfo::default()],
+            ..Default::default()
+        });
+        let memory = DeviceMemory::allocate(vulkan_device, MemoryAllocateInfo {
+            allocation_size: WIDTH * HEIGHT * 4,
+            ..Default::default()
+        })
+        .unwrap();
+        let file = memory
+            .export_fd(vulkano::memory::ExternalMemoryHandleType::OpaqueFd)
+            .unwrap();
 
-        // let cuda_slice = cuda_device
-        //     .alloc_zeros((WIDTH * HEIGHT * 4) as usize)
-        //     .unwrap();
-        // let dma_buf = DmaBuf::default();
-        // let mut handle = 0;
-        // assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
-        //     cuMemImportFromShareableHandle(
-        //         &mut handle,
-        //         dma_buf.as_raw_fd(),
-        //         CUmemAllocationHandleType::CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR,
-        //     )
-        // });
+        // Import POSIX Fd with CUDA.
+        let mut handle = 0;
+        assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
+            cuMemImportFromShareableHandle(
+                &mut handle,
+                file.as_raw_fd(),
+                CUmemAllocationHandleType::CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR,
+            )
+        });
 
-        // TODO: Take that DMABuf and register it as a resource.
-
-        let (input_resource, buf_fmt) = encoder.register_and_map_input_resource(NV_ENC_REGISTER_RESOURCE::new(
-            NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDAARRAY, // TODO: try NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR
-            WIDTH,
-            HEIGHT,
-            todo!(),
-            buffer_format,
-        )).unwrap();
+        let (input_resource, buf_fmt) = encoder
+            .register_and_map_input_resource(NV_ENC_REGISTER_RESOURCE::new(
+                NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
+                WIDTH,
+                HEIGHT,
+                handle as *mut c_void,
+                buffer_format,
+            ))
+            .unwrap();
         assert_eq!(buffer_format, buf_fmt);
 
-        //
+        // ---
 
         // TODO: In the samples they add a constant "extra output delay" to this,
         // investigate?
