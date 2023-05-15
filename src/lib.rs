@@ -6,44 +6,32 @@ extern crate lazy_static;
 
 #[cfg(test)]
 mod tests {
-    use std::{fs::OpenOptions, io::Write};
+    use std::{ffi::c_void, fs::OpenOptions, io::Write, os::fd::AsRawFd};
 
     use cudarc::driver::{
-        sys::{
-            cuMemExportToShareableHandle,
-            cuMemImportFromShareableHandle,
-            CUmemAllocationHandleType,
-        },
+        sys::{cuMemImportFromShareableHandle, CUmemAllocationHandleType, CUresult},
         CudaDevice,
     };
-    use dma_buf::DmaBuf;
     use vulkano::{
-        device::QueueCreateInfo,
+        device::{Device, DeviceCreateInfo, QueueCreateInfo},
         instance::{Instance, InstanceCreateInfo},
         memory::{DeviceMemory, MemoryAllocateInfo},
         VulkanLibrary,
     };
 
-    use crate::sys::nvEncodeAPI::{
-        NV_ENC_MAP_INPUT_RESOURCE,
-        NV_ENC_MAP_INPUT_RESOURCE_VER,
-        NV_ENC_REGISTER_RESOURCE,
-        NV_ENC_REGISTER_RESOURCE_VER,
-    };
     #[allow(deprecated)]
+    use crate::sys::nvEncodeAPI::NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
     use crate::{
         safe::api::ENCODE_API,
         sys::nvEncodeAPI::{
-            NV_ENC_BUFFER_FORMAT,
             NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
-            NV_ENC_BUFFER_USAGE,
             NV_ENC_CODEC_H264_GUID,
             NV_ENC_H264_PROFILE_HIGH_GUID,
             NV_ENC_INITIALIZE_PARAMS,
             NV_ENC_INPUT_RESOURCE_TYPE,
             NV_ENC_PIC_PARAMS,
             NV_ENC_PIC_STRUCT,
-            NV_ENC_PRESET_LOW_LATENCY_HP_GUID,
+            NV_ENC_REGISTER_RESOURCE,
             NV_ENC_TUNING_INFO,
         },
     };
@@ -80,7 +68,7 @@ mod tests {
         let cuda_device = CudaDevice::new(0).unwrap();
 
         let encoder = ENCODE_API
-            .open_encode_session_with_cuda(cuda_device.clone())
+            .open_encode_session_with_cuda(cuda_device)
             .unwrap();
 
         let encode_guids = encoder.get_encode_guids().unwrap();
@@ -134,12 +122,14 @@ mod tests {
             .unwrap()
             .next()
             .unwrap();
-        let vulkan_device = Device::new(physical_device, DeviceCreateInfo {
+        let (vulkan_device, mut queues) = Device::new(physical_device, DeviceCreateInfo {
             queue_create_infos: vec![QueueCreateInfo::default()],
             ..Default::default()
-        });
+        })
+        .unwrap();
+        let _queue = queues.next().unwrap();
         let memory = DeviceMemory::allocate(vulkan_device, MemoryAllocateInfo {
-            allocation_size: WIDTH * HEIGHT * 4,
+            allocation_size: (WIDTH * HEIGHT * 4) as u64,
             ..Default::default()
         })
         .unwrap();
@@ -152,12 +142,12 @@ mod tests {
         assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
             cuMemImportFromShareableHandle(
                 &mut handle,
-                file.as_raw_fd(),
+                file.as_raw_fd() as *mut c_void,
                 CUmemAllocationHandleType::CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR,
             )
         });
 
-        let (input_resource, buf_fmt) = encoder
+        let (_input_resource, buf_fmt) = encoder
             .register_and_map_input_resource(NV_ENC_REGISTER_RESOURCE::new(
                 NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
                 WIDTH,
@@ -200,7 +190,7 @@ mod tests {
             let output_buffer = &mut output_buffers[(i % num_bufs) as usize];
 
             generate_test_input(&mut input_data, WIDTH, HEIGHT, i, FRAMES);
-            input_buffer.write(&input_data).unwrap();
+            input_buffer.lock_and_write(false, &input_data).unwrap();
 
             // TODO: Timestamps?
             encoder
@@ -216,7 +206,7 @@ mod tests {
 
             // TODO: only read if encode_picture was Ok().
             // It could also ask for more input data!
-            let out = output_buffer.read().unwrap();
+            let out = output_buffer.lock_and_read().unwrap();
             out_file.write_all(out).unwrap();
         }
 
@@ -238,7 +228,7 @@ mod tests {
             )
             .unwrap();
 
-        let out = output_buffer.read().unwrap();
+        let out = output_buffer.lock_and_read().unwrap();
         out_file.write_all(out).unwrap();
     }
 }

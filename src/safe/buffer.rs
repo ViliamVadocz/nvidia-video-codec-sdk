@@ -1,4 +1,4 @@
-use std::{ffi::c_void, io};
+use std::ffi::c_void;
 
 use super::{api::ENCODE_API, encoder::Encoder, result::EncodeResult};
 use crate::sys::nvEncodeAPI::{
@@ -56,18 +56,8 @@ impl Drop for Buffer<'_> {
     }
 }
 
-impl io::Write for Buffer<'_> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.lock_and_write(false, buf).into()
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
-
 impl EncoderInput for Buffer<'_> {
-    fn handle(&self) -> *mut c_void {
+    fn handle(&mut self) -> *mut c_void {
         self.ptr
     }
 }
@@ -112,14 +102,8 @@ impl Drop for Bitstream<'_> {
     }
 }
 
-impl io::Read for Bitstream<'_> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.lock_and_read().into()
-    }
-}
-
 impl EncoderOutput for Bitstream<'_> {
-    fn handle(&self) -> *mut c_void {
+    fn handle(&mut self) -> *mut c_void {
         self.ptr
     }
 }
@@ -153,8 +137,8 @@ impl Drop for MappedResource<'_> {
     }
 }
 
-impl EncoderInput for MappedResource {
-    fn handle(&self) -> *mut c_void {
+impl EncoderInput for MappedResource<'_> {
+    fn handle(&mut self) -> *mut c_void {
         self.map_ptr
     }
 }

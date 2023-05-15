@@ -177,10 +177,7 @@ impl Encoder {
         };
         unsafe { (ENCODE_API.create_input_buffer)(self.ptr, &mut create_input_buffer_params) }
             .result()?;
-        Ok(InputBuffer::new(
-            create_input_buffer_params.inputBuffer,
-            self,
-        ))
+        Ok(Buffer::new(create_input_buffer_params.inputBuffer, self))
     }
 
     pub fn create_output_bitstream(&self) -> EncodeResult<Bitstream> {
@@ -193,7 +190,7 @@ impl Encoder {
             (ENCODE_API.create_bitstream_buffer)(self.ptr, &mut create_bitstream_buffer_params)
         }
         .result()?;
-        Ok(OutputBitstream::new(
+        Ok(Bitstream::new(
             create_bitstream_buffer_params.bitstreamBuffer,
             self,
         ))
@@ -209,21 +206,19 @@ impl Encoder {
         );
 
         // Register resource.
-        unsafe {
-            (ENCODE_API.register_resource)(encoder.ptr, &mut register_resource_params);
-        }
-        .result()?;
+        unsafe { (ENCODE_API.register_resource)(self.ptr, &mut register_resource_params) }
+            .result()?;
         let registered_resource = register_resource_params.registeredResource;
 
         // Map resource.
         let mut map_input_resource_params = NV_ENC_MAP_INPUT_RESOURCE {
             version: NV_ENC_MAP_INPUT_RESOURCE_VER,
             registeredResource: registered_resource,
-            mappedResource: str::ptr::null_mut(),
+            mappedResource: ptr::null_mut(),
             mappedBufferFmt: NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_UNDEFINED,
             ..Default::default()
         };
-        unsafe { (ENCODE_API.map_input_resource)(encoder.ptr, &mut map_input_resource_params) }
+        unsafe { (ENCODE_API.map_input_resource)(self.ptr, &mut map_input_resource_params) }
             .result()?;
 
         let mapped_resource = map_input_resource_params.mappedResource;
