@@ -6,31 +6,47 @@ extern crate lazy_static;
 
 #[cfg(test)]
 mod tests {
-    use std::{ffi::c_void, fs::OpenOptions, io::Write, mem, os::fd::AsRawFd, ptr};
-    use std::ffi::{c_int, c_ulonglong};
-    use std::sync::Arc;
+    use std::{
+        ffi::{c_int, c_void},
+        fs::OpenOptions,
+        io::Write,
+        os::fd::AsRawFd,
+        ptr,
+        sync::Arc,
+    };
 
-    use cudarc::driver::{sys::{cuMemImportFromShareableHandle, CUmemAllocationHandleType, CUresult}, CudaDevice, CudaSlice};
-    use cudarc::driver::sys::{CUDA_EXTERNAL_MEMORY_BUFFER_DESC, CUDA_EXTERNAL_MEMORY_HANDLE_DESC, CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1, CUdeviceptr, CUexternalMemory, cuExternalMemoryGetMappedBuffer, CUexternalMemoryHandleType, cuImportExternalMemory, cuMemcpy, cuMemcpyHtoD_v2};
+    use cudarc::driver::{
+        sys::{
+            cuExternalMemoryGetMappedBuffer,
+            cuImportExternalMemory,
+            CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1,
+            CUdeviceptr,
+            CUexternalMemory,
+            CUexternalMemoryHandleType,
+            CUresult,
+            CUDA_EXTERNAL_MEMORY_BUFFER_DESC,
+            CUDA_EXTERNAL_MEMORY_HANDLE_DESC,
+        },
+        CudaDevice,
+    };
     use vulkano::{
-        device::{Device, DeviceCreateInfo, QueueCreateInfo},
+        device::{Device, DeviceCreateInfo, DeviceExtensions, QueueCreateInfo},
         instance::{Instance, InstanceCreateInfo},
         memory::{
             DeviceMemory,
             ExternalMemoryHandleType,
             ExternalMemoryHandleTypes,
+            MappedDeviceMemory,
             MemoryAllocateInfo,
+            MemoryPropertyFlags,
         },
         VulkanLibrary,
     };
-    use vulkano::device::DeviceExtensions;
-    use vulkano::memory::allocator::{GenericMemoryAllocator, MemoryAllocator};
-    use vulkano::memory::{MappedDeviceMemory, MemoryRequirements};
 
     #[allow(deprecated)]
     use crate::sys::nvEncodeAPI::NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
     use crate::{
-        safe::api::ENCODE_API,
+        safe::{api::ENCODE_API, buffer::MappedResource, encoder::Encoder},
         sys::nvEncodeAPI::{
             NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
             NV_ENC_CODEC_H264_GUID,
@@ -41,11 +57,9 @@ mod tests {
             NV_ENC_PIC_STRUCT,
             NV_ENC_REGISTER_RESOURCE,
             NV_ENC_TUNING_INFO,
+            _NV_ENC_BUFFER_FORMAT,
         },
     };
-    use crate::safe::buffer::MappedResource;
-    use crate::safe::encoder::Encoder;
-    use crate::sys::nvEncodeAPI::_NV_ENC_BUFFER_FORMAT;
 
     fn get_color(width: u32, height: u32, x: u32, y: u32, t: f32) -> (u8, u8, u8, u8) {
         let alpha = 255;
@@ -75,6 +89,43 @@ mod tests {
     fn example() {
         const WIDTH: u32 = 1920;
         const HEIGHT: u32 = 1080;
+
+        // Initialize Vulkan.
+        let vulkan_library = VulkanLibrary::new().unwrap();
+        let instance = Instance::new(
+            vulkan_library,
+            InstanceCreateInfo::application_from_cargo_toml(),
+        )
+        .unwrap();
+        // Get a physical device which has a memory type with the right flags
+        let (memory_type_index, physical_device) = instance
+            .enumerate_physical_devices()
+            .unwrap()
+            .filter_map(|pd| {
+                pd.memory_properties()
+                    .memory_types
+                    .iter()
+                    .position(|mt| {
+                        mt.property_flags.contains(
+                            MemoryPropertyFlags::HOST_VISIBLE
+                                | MemoryPropertyFlags::DEVICE_LOCAL
+                                | MemoryPropertyFlags::DEVICE_COHERENT,
+                        )
+                    })
+                    .map(|index| (index as u32, pd))
+            })
+            .next()
+            .unwrap();
+        // Create Vulkan device.
+        let (vulkan_device, _queues) = Device::new(physical_device, DeviceCreateInfo {
+            queue_create_infos: vec![QueueCreateInfo::default()],
+            enabled_extensions: DeviceExtensions {
+                khr_external_memory_fd: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap();
 
         let cuda_device = CudaDevice::new(0).unwrap();
 
@@ -117,49 +168,10 @@ mod tests {
             )
             .unwrap();
 
-        // ---
-
-        // 4.1.2. Input buffers allocated externally
-
-        // Allocate memory with Vulkan and export it as a POSIX Fd.
-        let vulkan_library = VulkanLibrary::new().unwrap();
-        let instance = Instance::new(
-            vulkan_library,
-            InstanceCreateInfo::application_from_cargo_toml(),
-        )
-        .unwrap();
-        let physical_device = instance
-            .enumerate_physical_devices()
-            .unwrap()
-            .next()
-            .unwrap();
-        let (vulkan_device, mut queues) = Device::new(physical_device, DeviceCreateInfo {
-            queue_create_infos: vec![QueueCreateInfo::default()],
-            enabled_extensions: DeviceExtensions {
-                khr_external_memory_fd: true,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .unwrap();
-        let _queue = queues.next().unwrap();
-
         // TODO: In the samples they add a constant "extra output delay" to this,
         // investigate?
         let num_bufs = preset_config.presetCfg.frameIntervalP as u32
             + preset_config.presetCfg.rcParams.lookaheadDepth as u32;
-
-        let mut input_buffers: Vec<_> = (0..num_bufs).map(|_| make_vulkan_buffer(&encoder, buffer_format, vulkan_device.clone(), WIDTH, HEIGHT)).collect();
-
-        // ---
-
-        /*let mut input_buffers: Vec<_> = (0..num_bufs)
-            .map(|_| {
-                encoder
-                    .create_input_buffer(WIDTH, HEIGHT, buffer_format)
-                    .unwrap()
-            })
-            .collect();*/
 
         let mut output_buffers: Vec<_> = (0..num_bufs)
             .map(|_| encoder.create_output_bitstream().unwrap())
@@ -175,22 +187,24 @@ mod tests {
         let mut input_data = vec![0; (WIDTH * HEIGHT * 4) as usize];
         const FRAMES: u32 = 128;
         for i in 0..FRAMES {
-            let (input_buffer, input_dev_ptr) = &mut input_buffers[(i % num_bufs) as usize];
+            let mut input_buffer = make_vulkan_buffer(
+                &encoder,
+                buffer_format,
+                vulkan_device,
+                memory_type_index,
+                WIDTH,
+                HEIGHT,
+                i,
+                FRAMES,
+            );
             let output_buffer = &mut output_buffers[(i % num_bufs) as usize];
-
-            generate_test_input(&mut input_data, WIDTH, HEIGHT, i, FRAMES);
-            //input_buffer.lock_and_write(false, &input_data).unwrap();
-            assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
-               cuMemcpyHtoD_v2(*input_dev_ptr, input_data.as_ptr() as *const c_void, input_data.len())
-            });
-            cuda_device.synchronize().unwrap();
 
             // TODO: Timestamps?
             encoder
                 .encode_picture(NV_ENC_PIC_PARAMS::new(
                     WIDTH,
                     HEIGHT,
-                    input_buffer,
+                    &mut input_buffer,
                     output_buffer,
                     buffer_format,
                     NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
@@ -206,13 +220,23 @@ mod tests {
         // 5.1. Notifying the End of Input Stream
         // Note that output is still generated here
 
+        let mut input_buffer = make_vulkan_buffer(
+            &encoder,
+            buffer_format,
+            vulkan_device,
+            memory_type_index,
+            WIDTH,
+            HEIGHT,
+            0,
+            FRAMES,
+        );
         let output_buffer = &mut output_buffers[0];
         encoder
             .encode_picture(
                 NV_ENC_PIC_PARAMS::new(
                     WIDTH,
                     HEIGHT,
-                    &mut input_buffers[0].0,
+                    &mut input_buffer,
                     output_buffer,
                     buffer_format,
                     NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
@@ -225,66 +249,64 @@ mod tests {
         out_file.write_all(out).unwrap();
     }
 
-    fn make_vulkan_buffer(encoder: &Encoder, buffer_format: _NV_ENC_BUFFER_FORMAT, vulkan_device: Arc<Device>, width: u32, height: u32) -> (MappedResource, CUdeviceptr) {
+    fn make_vulkan_buffer(
+        encoder: &Encoder,
+        buffer_format: _NV_ENC_BUFFER_FORMAT,
+        vulkan_device: Arc<Device>,
+        memory_type_index: u32,
+        width: u32,
+        height: u32,
+        i: u32,
+        i_max: u32,
+    ) -> MappedResource {
+        // 4.1.2. Input buffers allocated externally
+        let size = (width * height * 4) as u64;
+
+        // Allocate memory with Vulkan.
         let memory = DeviceMemory::allocate(vulkan_device, MemoryAllocateInfo {
-            allocation_size: (width * height * 4) as u64,
-            memory_type_index: 0,
+            allocation_size: size,
+            memory_type_index,
             export_handle_types: ExternalMemoryHandleTypes::OPAQUE_FD,
             ..Default::default()
-        }).unwrap();
-        /*let vulkan_alloc = GenericMemoryAllocator::new_default(vulkan_device.clone());
-        vulkan_alloc.allocate(MemoryRequirements::)
-        let memory = DeviceMemory::allocate(vulkan_device, MemoryAllocateInfo {
-            allocation_size: (WIDTH * HEIGHT * 4) as u64,
-            memory_type_index: 0,
-            export_handle_types: ExternalMemoryHandleTypes::OPAQUE_FD,
-            ..Default::default()
-        }).unwrap();
-        let range = 0..((WIDTH * HEIGHT * 4) as u64);
-        let mapped_memory = MappedDeviceMemory::new(memory, range).unwrap();
+        })
+        .unwrap();
+        // Map and write to the memory.
+        let mapped_memory = MappedDeviceMemory::new(memory, 0..size).unwrap();
         unsafe {
-            let content = mapped_memory.write( 0..((WIDTH * HEIGHT * 4) as u64)).unwrap();
-            generate_test_input(content, WIDTH, HEIGHT, 0, 128);
+            let content = mapped_memory.write(0..size).unwrap();
+            generate_test_input(content, width, height, i, i_max);
+            mapped_memory.flush_range(0..size).unwrap();
         }
-        let memory = mapped_memory.unmap();*/
-        let file = memory
+        // Export the memory.
+        let file = mapped_memory
+            .unmap()
             .export_fd(ExternalMemoryHandleType::OpaqueFd)
             .unwrap();
 
-        // Import POSIX Fd with CUDA.
-        /*
-        let mut handle = 0;
-        assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
-            cuMemImportFromShareableHandle(
-                &mut handle,
-                file.as_raw_fd() as *mut c_void,
-                CUmemAllocationHandleType::CU_MEM_HANDLE_TYPE_POSIX_FILE_DESCRIPTOR,
-            )
-        });*/
-
-        let mut ext_mem: CUexternalMemory = ptr::null_mut();
-        let desc = CUDA_EXTERNAL_MEMORY_HANDLE_DESC {
+        // Import file handle with CUDA.
+        let mut external_memory: CUexternalMemory = ptr::null_mut();
+        let handle_description = CUDA_EXTERNAL_MEMORY_HANDLE_DESC {
             type_: CUexternalMemoryHandleType::CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD,
             handle: CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1 {
-                fd: file.as_raw_fd() as c_int
+                fd: file.as_raw_fd() as c_int,
             },
-            size: (width * height * 4) as c_ulonglong,
+            size,
             ..Default::default()
         };
         assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
-            cuImportExternalMemory(&mut ext_mem, &desc)
+            cuImportExternalMemory(&mut external_memory, &handle_description)
         });
-
+        // Get mapped buffer.
         let mut device_ptr: CUdeviceptr = 0;
-        let desc = CUDA_EXTERNAL_MEMORY_BUFFER_DESC {
-            size: (width * height * 4) as c_ulonglong,
+        let buffer_description = CUDA_EXTERNAL_MEMORY_BUFFER_DESC {
+            size,
             ..Default::default()
         };
         assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
-            cuExternalMemoryGetMappedBuffer(&mut device_ptr, ext_mem, &desc)
+            cuExternalMemoryGetMappedBuffer(&mut device_ptr, external_memory, &buffer_description)
         });
-
-        let (mut _input_resource, buf_fmt) = encoder
+        // Register and map it with NVENC.
+        let (input_resource, buf_fmt) = encoder
             .register_and_map_input_resource(NV_ENC_REGISTER_RESOURCE::new(
                 NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
                 width,
@@ -292,8 +314,9 @@ mod tests {
                 device_ptr as *mut c_void,
                 buffer_format,
             ))
-            .unwrap_or_else(|e| panic!("{e:?} {}", encoder.get_last_error_string().to_str().unwrap()));
+            .unwrap();
         assert_eq!(buffer_format, buf_fmt);
-        (_input_resource, device_ptr)
+        input_resource
+        // TODO: Should the CUDA mapping, etc. be undone to free the memory?
     }
 }
