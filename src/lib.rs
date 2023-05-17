@@ -184,13 +184,12 @@ mod tests {
             .open("test.bin")
             .unwrap();
 
-        let mut input_data = vec![0; (WIDTH * HEIGHT * 4) as usize];
         const FRAMES: u32 = 128;
         for i in 0..FRAMES {
             let mut input_buffer = make_vulkan_buffer(
                 &encoder,
                 buffer_format,
-                vulkan_device,
+                vulkan_device.clone(),
                 memory_type_index,
                 WIDTH,
                 HEIGHT,
@@ -249,6 +248,7 @@ mod tests {
         out_file.write_all(out).unwrap();
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn make_vulkan_buffer(
         encoder: &Encoder,
         buffer_format: _NV_ENC_BUFFER_FORMAT,
