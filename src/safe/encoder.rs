@@ -13,21 +13,17 @@ use super::{
 use crate::sys::nvEncodeAPI::{
     GUID,
     NV_ENC_BUFFER_FORMAT,
-    NV_ENC_BUFFER_USAGE,
     NV_ENC_CODEC_PIC_PARAMS,
     NV_ENC_CONFIG,
     NV_ENC_CONFIG_VER,
     NV_ENC_INITIALIZE_PARAMS,
     NV_ENC_INITIALIZE_PARAMS_VER,
-    NV_ENC_INPUT_RESOURCE_TYPE,
     NV_ENC_PIC_FLAGS,
     NV_ENC_PIC_PARAMS,
     NV_ENC_PIC_PARAMS_VER,
     NV_ENC_PIC_STRUCT,
     NV_ENC_PRESET_CONFIG,
     NV_ENC_PRESET_CONFIG_VER,
-    NV_ENC_REGISTER_RESOURCE,
-    NV_ENC_REGISTER_RESOURCE_VER,
     NV_ENC_TUNING_INFO,
 };
 
@@ -286,43 +282,6 @@ impl NV_ENC_PIC_PARAMS {
     #[must_use]
     pub fn end_of_stream(mut self) -> Self {
         self.encodePicFlags |= NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32;
-        self
-    }
-
-    // TODO: Add other options
-}
-
-// Builder pattern
-impl NV_ENC_REGISTER_RESOURCE {
-    #[must_use]
-    pub fn new(
-        resource_type: NV_ENC_INPUT_RESOURCE_TYPE,
-        width: u32,
-        height: u32,
-        resource_to_register: *mut c_void,
-        buffer_format: NV_ENC_BUFFER_FORMAT,
-    ) -> Self {
-        NV_ENC_REGISTER_RESOURCE {
-            version: NV_ENC_REGISTER_RESOURCE_VER,
-            resourceType: resource_type,
-            width,
-            height,
-            pitch: width,
-            resourceToRegister: resource_to_register,
-            registeredResource: std::ptr::null_mut(),
-            bufferFormat: buffer_format,
-            ..Default::default()
-        }
-    }
-
-    #[must_use]
-    pub fn pitch(mut self, pitch: u32) -> Self {
-        self.pitch = pitch;
-        self
-    }
-
-    pub fn buffer_usage(mut self, buffer_usage: NV_ENC_BUFFER_USAGE) -> Self {
-        self.bufferUsage = buffer_usage;
         self
     }
 
