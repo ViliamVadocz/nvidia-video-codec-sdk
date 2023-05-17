@@ -30,7 +30,13 @@ mod tests {
         CudaDevice,
     };
     use vulkano::{
-        device::{Device, DeviceCreateInfo, DeviceExtensions, QueueCreateInfo},
+        device::{
+            physical::PhysicalDeviceType,
+            Device,
+            DeviceCreateInfo,
+            DeviceExtensions,
+            QueueCreateInfo,
+        },
         instance::{Instance, InstanceCreateInfo},
         memory::{
             DeviceMemory,
@@ -98,21 +104,26 @@ mod tests {
         )
         .unwrap();
         // Get a physical device which has a memory type with the right flags
+        // for pd in instance.enumerate_physical_devices().unwrap() {
+        //     println!("{:#?}", pd.properties());
+        //     println!("{:#?}", pd.memory_properties());
+        // }
         let (memory_type_index, physical_device) = instance
             .enumerate_physical_devices()
             .unwrap()
             .filter_map(|pd| {
-                pd.memory_properties()
-                    .memory_types
-                    .iter()
-                    .position(|mt| {
-                        mt.property_flags.contains(
-                            MemoryPropertyFlags::HOST_VISIBLE
-                                | MemoryPropertyFlags::DEVICE_LOCAL
-                                | MemoryPropertyFlags::DEVICE_COHERENT,
-                        )
+                matches!(pd.properties().device_type, PhysicalDeviceType::DiscreteGpu)
+                    .then_some(())
+                    .and_then(|()| {
+                        pd.memory_properties()
+                            .memory_types
+                            .iter()
+                            .position(|mt| {
+                                mt.property_flags
+                                    .contains(MemoryPropertyFlags::HOST_VISIBLE)
+                            })
+                            .map(|index| (index as u32, pd))
                     })
-                    .map(|index| (index as u32, pd))
             })
             .next()
             .unwrap();
