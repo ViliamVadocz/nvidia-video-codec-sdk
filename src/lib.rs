@@ -105,7 +105,7 @@ mod tests {
         .unwrap();
         // Get a physical device which has a memory type with the right flags
         // for pd in instance.enumerate_physical_devices().unwrap() {
-        //     println!("{:#?}", pd.properties());
+        //     println!("{:#?}", pd.properties(),device_type);
         //     println!("{:#?}", pd.memory_properties());
         // }
         let (memory_type_index, physical_device) = instance
@@ -318,13 +318,16 @@ mod tests {
         });
         // Register and map it with NVENC.
         let (input_resource, buf_fmt) = encoder
-            .register_and_map_input_resource(NV_ENC_REGISTER_RESOURCE::new(
-                NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
-                width,
-                height,
-                device_ptr as *mut c_void,
-                buffer_format,
-            ))
+            .register_and_map_input_resource(
+                NV_ENC_REGISTER_RESOURCE::new(
+                    NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
+                    width,
+                    height,
+                    device_ptr as *mut c_void,
+                    buffer_format,
+                )
+                .pitch(width * 4),
+            )
             .unwrap();
         assert_eq!(buffer_format, buf_fmt);
         input_resource
