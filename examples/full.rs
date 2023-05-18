@@ -9,38 +9,57 @@ use std::{
 
 use cudarc::driver::{
     sys::{
-        cuExternalMemoryGetMappedBuffer, cuImportExternalMemory,
-        CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1, CUdeviceptr, CUexternalMemory,
-        CUexternalMemoryHandleType, CUresult, CUDA_EXTERNAL_MEMORY_BUFFER_DESC,
+        cuExternalMemoryGetMappedBuffer,
+        cuImportExternalMemory,
+        CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1,
+        CUdeviceptr,
+        CUexternalMemory,
+        CUexternalMemoryHandleType,
+        CUresult,
+        CUDA_EXTERNAL_MEMORY_BUFFER_DESC,
         CUDA_EXTERNAL_MEMORY_HANDLE_DESC,
     },
     CudaDevice,
 };
-use vulkano::{
-    device::{
-        physical::PhysicalDeviceType, Device, DeviceCreateInfo, DeviceExtensions, QueueCreateInfo,
-    },
-    instance::{Instance, InstanceCreateInfo},
-    memory::{
-        DeviceMemory, ExternalMemoryHandleType, ExternalMemoryHandleTypes, MappedDeviceMemory,
-        MemoryAllocateInfo, MemoryPropertyFlags,
-    },
-    VulkanLibrary,
-};
-
 #[allow(deprecated)]
 use nvidia_video_codec_sdk::sys::nvEncodeAPI::NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
 use nvidia_video_codec_sdk::{
     safe::{api::ENCODE_API, buffer::MappedResource, encoder::Encoder},
     sys::nvEncodeAPI::{
-        NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB, NV_ENC_CODEC_H264_GUID,
-        NV_ENC_H264_PROFILE_HIGH_GUID, NV_ENC_INITIALIZE_PARAMS, NV_ENC_INPUT_RESOURCE_TYPE,
-        NV_ENC_PIC_PARAMS, NV_ENC_PIC_STRUCT, NV_ENC_REGISTER_RESOURCE, NV_ENC_TUNING_INFO,
+        NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
+        NV_ENC_CODEC_H264_GUID,
+        NV_ENC_H264_PROFILE_HIGH_GUID,
+        NV_ENC_INITIALIZE_PARAMS,
+        NV_ENC_INPUT_RESOURCE_TYPE,
+        NV_ENC_PIC_PARAMS,
+        NV_ENC_PIC_STRUCT,
+        NV_ENC_REGISTER_RESOURCE,
+        NV_ENC_TUNING_INFO,
         _NV_ENC_BUFFER_FORMAT,
     },
 };
+use vulkano::{
+    device::{
+        physical::PhysicalDeviceType,
+        Device,
+        DeviceCreateInfo,
+        DeviceExtensions,
+        QueueCreateInfo,
+    },
+    instance::{Instance, InstanceCreateInfo},
+    memory::{
+        DeviceMemory,
+        ExternalMemoryHandleType,
+        ExternalMemoryHandleTypes,
+        MappedDeviceMemory,
+        MemoryAllocateInfo,
+        MemoryPropertyFlags,
+    },
+    VulkanLibrary,
+};
 
-/// Returns the color `(r, g, b, alpha)` of a pixel on the screen relative to its position on a screen:
+/// Returns the color `(r, g, b, alpha)` of a pixel on the screen relative to
+/// its position on a screen:
 ///
 /// Top right will be red,
 /// bottom left will be green,
@@ -122,17 +141,14 @@ fn main() {
         );
 
     // Create a Vulkan device.
-    let (vulkan_device, _queues) = Device::new(
-        physical_device,
-        DeviceCreateInfo {
-            queue_create_infos: vec![QueueCreateInfo::default()],
-            enabled_extensions: DeviceExtensions {
-                khr_external_memory_fd: true,
-                ..Default::default()
-            },
+    let (vulkan_device, _queues) = Device::new(physical_device, DeviceCreateInfo {
+        queue_create_infos: vec![QueueCreateInfo::default()],
+        enabled_extensions: DeviceExtensions {
+            khr_external_memory_fd: true,
             ..Default::default()
         },
-    )
+        ..Default::default()
+    })
     .expect(
         "Vulkan should be installed correctly and `Device` should support `khr_external_memory_fd`",
     );
@@ -142,7 +158,10 @@ fn main() {
 
     let encoder = ENCODE_API
         .open_encode_session_with_cuda(cuda_device)
-        .expect("NVENC API initialization should succeed given that the NVIDIA Video Codec SDK has been installed correctly");
+        .expect(
+            "NVENC API initialization should succeed given that the NVIDIA Video Codec SDK has \
+             been installed correctly",
+        );
 
     // Get all encode guids supported by the GPU.
     let encode_guids = encoder
@@ -173,8 +192,8 @@ fn main() {
     let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
     assert!(input_formats.contains(&buffer_format));
 
-    // Get the preset config based on the selected encode guid (H.264), selected preset (`LOW_LATENCY`),
-    // and tuning info (`ULTRA_LOW_LATENCY`).
+    // Get the preset config based on the selected encode guid (H.264), selected
+    // preset (`LOW_LATENCY`), and tuning info (`ULTRA_LOW_LATENCY`).
     let mut preset_config = encoder
         .get_preset_config(
             encode_guid,
@@ -183,7 +202,8 @@ fn main() {
         )
         .expect("Encoder should be able to create config based on presets");
 
-    // Initialise a new encoder session based on the `preset_config` we generated before.
+    // Initialise a new encoder session based on the `preset_config` we generated
+    // before.
     encoder
         .initialize_encoder_session(
             NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
@@ -194,7 +214,8 @@ fn main() {
         )
         .expect("Encoder should be initialised correctly");
 
-    // Calculate the number of buffers we need based on the interval of P frames and the look ahead depth.
+    // Calculate the number of buffers we need based on the interval of P frames and
+    // the look ahead depth.
     let num_bufs = usize::try_from(preset_config.presetCfg.frameIntervalP)
         .expect("frame intervalP should always be positive")
         + usize::try_from(preset_config.presetCfg.rcParams.lookaheadDepth)
@@ -275,7 +296,8 @@ fn main() {
         .expect("Writing should succeed because `out_file` was opened with write permissions");
 }
 
-/// Allocates memory on a Vulkan [`Device`] and returns a [`File`] (file descriptor) to that data.
+/// Allocates memory on a Vulkan [`Device`] and returns a [`File`] (file
+/// descriptor) to that data.
 ///
 /// Will be used to create file descriptors for the invidual frames.
 ///
@@ -283,7 +305,8 @@ fn main() {
 ///
 /// * `vulkan_device` - The device where the data should be allocated.
 ///
-/// * `memory_type_index` - The index of the memory type that should be allocated.
+/// * `memory_type_index` - The index of the memory type that should be
+///   allocated.
 ///
 /// * `width`, `height` - The size of data to store.
 ///
@@ -299,15 +322,12 @@ fn create_buffer(
     let size = (width * height * 4) as u64;
 
     // Allocate memory with Vulkan.
-    let memory = DeviceMemory::allocate(
-        vulkan_device,
-        MemoryAllocateInfo {
-            allocation_size: size,
-            memory_type_index,
-            export_handle_types: ExternalMemoryHandleTypes::OPAQUE_FD,
-            ..Default::default()
-        },
-    )
+    let memory = DeviceMemory::allocate(vulkan_device, MemoryAllocateInfo {
+        allocation_size: size,
+        memory_type_index,
+        export_handle_types: ExternalMemoryHandleTypes::OPAQUE_FD,
+        ..Default::default()
+    })
     .expect("There should be space to allocate vulkan memory on the device");
 
     // Map and write to the memory.
@@ -318,7 +338,10 @@ fn create_buffer(
             .write(0..size)
             .expect("The physical device and memory type is HOST_VISIBLE");
         generate_test_input(content, width, height, i, i_max);
-        mapped_memory.flush_range(0..size).expect("There should be no other devices writing to this memory and size should also fit within the size");
+        mapped_memory.flush_range(0..size).expect(
+            "There should be no other devices writing to this memory and size should also fit \
+             within the size",
+        );
     }
 
     // Export the memory.
@@ -338,7 +361,8 @@ fn create_buffer(
 ///
 /// * `width`, `height` - The size of data to store.
 ///
-/// * `file` - The file descriptor pointing towards the (vulkan) buffer that needs to be mapped.
+/// * `file` - The file descriptor pointing towards the (vulkan) buffer that
+///   needs to be mapped.
 fn fd_into_nvenc_resource(
     encoder: &Encoder,
     buffer_format: _NV_ENC_BUFFER_FORMAT,
