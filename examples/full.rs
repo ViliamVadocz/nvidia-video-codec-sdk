@@ -89,7 +89,7 @@ fn main() {
     const FRAMES: u32 = 128;
 
     // Initialize Vulkan.
-    let vulkan_library = VulkanLibrary::new().unwrap();
+    let vulkan_library = VulkanLibrary::new().expect("Vulkan should be installed correctly");
     let instance = Instance::new(
         vulkan_library,
         InstanceCreateInfo::application_from_cargo_toml(),
@@ -98,7 +98,7 @@ fn main() {
 
     let (memory_type_index, physical_device) = instance
         .enumerate_physical_devices()
-        .unwrap()
+        .expect("There should be some device capable of encoding")
         .filter_map(|pd| {
             matches!(pd.properties().device_type, PhysicalDeviceType::DiscreteGpu)
                 .then_some(())
@@ -133,7 +133,7 @@ fn main() {
     );
 
     // Create a new [`CudaDevice`] to interact with cuda.
-    let cuda_device = CudaDevice::new(0).unwrap();
+    let cuda_device = CudaDevice::new(0).expect("Cuda should be installed correctly");
 
     let encoder = ENCODE_API
         .open_encode_session_with_cuda(cuda_device)
@@ -301,21 +301,24 @@ fn create_buffer(
             ..Default::default()
         },
     )
-    .unwrap();
+    .expect("There should be space to allocate vulkan memory on the device");
 
     // Map and write to the memory.
-    let mapped_memory = MappedDeviceMemory::new(memory, 0..size).unwrap();
+    let mapped_memory = MappedDeviceMemory::new(memory, 0..size)
+        .expect("There should be memory available to map and write to");
     unsafe {
-        let content = mapped_memory.write(0..size).unwrap();
+        let content = mapped_memory
+            .write(0..size)
+            .expect("There should be no other devices writing to this memory");
         generate_test_input(content, width, height, i, i_max);
-        mapped_memory.flush_range(0..size).unwrap();
+        mapped_memory.flush_range(0..size).expect("There should be no other devices writing to this memory and size should also fit within the size");
     }
 
     // Export the memory.
     mapped_memory
         .unmap()
         .export_fd(ExternalMemoryHandleType::OpaqueFd)
-        .unwrap()
+        .expect("The memory should be able to be turned into a file handle if we are on UNIX")
 }
 
 /// Converts a [`File`] (UNIX file descriptor) into a [`MappedResource`].
@@ -375,7 +378,7 @@ fn fd_into_nvenc_resource(
             )
             .pitch(width * 4),
         )
-        .unwrap();
+        .expect("Should be able to register buffer with right size as nvenc resource");
     assert_eq!(buffer_format, buf_fmt);
     input_resource
 }
