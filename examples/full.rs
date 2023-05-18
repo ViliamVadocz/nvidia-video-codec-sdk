@@ -60,7 +60,13 @@ fn get_color(width: u32, height: u32, x: u32, y: u32, time: f32) -> (u8, u8, u8,
     (blue, green, red, alpha)
 }
 
-/// Generates a
+/// Generates test frame inputs and sets `buf` to that input.
+///
+/// `buf`: The buffer in which to put the generated input.
+///
+/// `width`, `height`: The size of the frames to generate input for.
+///
+/// `i`, `i_max`: The current frame and total amount of frames.
 fn generate_test_input(buf: &mut [u8], width: u32, height: u32, i: u32, i_max: u32) {
     assert_eq!(buf.len(), (width * height * 4) as usize);
     for y in 0..height {
@@ -76,7 +82,7 @@ fn generate_test_input(buf: &mut [u8], width: u32, height: u32, i: u32, i_max: u
     }
 }
 
-/// Creates a bitstream for a 1920x1080 video.
+/// Creates a bitstream for a 128 frame, 1920x1080 video.
 fn main() {
     const WIDTH: u32 = 1920;
     const HEIGHT: u32 = 1080;
@@ -126,6 +132,7 @@ fn main() {
         "Vulkan should be installed correctly and `Device` should support `khr_external_memory_fd`",
     );
 
+    // Create a new [`CudaDevice`] to interact with cuda.
     let cuda_device = CudaDevice::new(0).unwrap();
 
     let encoder = ENCODE_API
@@ -206,12 +213,11 @@ fn main() {
     // Create Vulkan buffers
     // 4.1.2. Input buffers allocated externally
 
-    // Generate each of the frames
+    // Generate each of the frames.
     let file_descriptors = (1..FRAMES)
         .map(|f| {
             create_buffer(
-                buffer_format,
-                vulkan_device,
+                vulkan_device.clone(),
                 memory_type_index,
                 WIDTH,
                 HEIGHT,
@@ -221,18 +227,12 @@ fn main() {
         })
         .collect::<Vec<_>>();
 
-    // Generate each of the frames
+    // Encode each of the frames.
     for (i, file_descriptor) in file_descriptors.into_iter().enumerate() {
         let output_buffer = &mut output_buffers[i % num_bufs];
 
-        let input_buffer = make_vulkan_buffer(
-            &encoder,
-            buffer_format,
-            memory_type_index,
-            WIDTH,
-            HEIGHT,
-            file_descriptor,
-        );
+        let mut input_buffer =
+            fd_into_nvenc_resource(&encoder, buffer_format, WIDTH, HEIGHT, file_descriptor);
 
         encoder
             .encode_picture(NV_ENC_PIC_PARAMS::new(
@@ -245,8 +245,6 @@ fn main() {
             ))
             .expect("Encoder should be able to encode valid pictures");
 
-        // TODO: only read if encode_picture was Ok().
-        // It could also ask for more input data!
         let out = output_buffer
             .lock_and_read()
             .expect("Buffer should be fully filled and not locked");
@@ -257,40 +255,33 @@ fn main() {
 
     // Notifying the End of Input Stream with end of stream picture.
     // Note that output is still generated here.
-    let mut input_buffer = make_vulkan_buffer(
-        &encoder,
-        buffer_format,
-        memory_type_index,
-        WIDTH,
-        HEIGHT,
-        FRAMES,
-    );
-
     let output_buffer = &mut output_buffers[0];
     encoder
-        .encode_picture(
-            NV_ENC_PIC_PARAMS::new(
-                WIDTH,
-                HEIGHT,
-                &mut input_buffer,
-                output_buffer,
-                buffer_format,
-                NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
-            )
-            .end_of_stream(),
-        )
-        .unwrap();
+        .encode_picture(NV_ENC_PIC_PARAMS::end_of_stream())
+        .expect("Should be able to encode empty end of stream file");
 
     let out = output_buffer
         .lock_and_read()
         .expect("Buffer should be fully filled and not locked");
+
     out_file
         .write_all(out)
         .expect("Should be able to acces the file system and write to a `out_file`");
 }
 
+/// Creates allocates memory on a vulkan [`Device`] and returns a [`File`] (file descriptor) to that data.
+///
+/// Will be used to create file descriptors for the invidual frames.
+///
+/// # Params
+/// `vulkan_device`: The device where the data should be allocated.
+///
+/// `memory_type_index`: The index of the memory type that should be allocated.
+///
+/// `width`, `height`: The size of data to store.
+///
+/// `i`, `i_max`: The current frame and maximum frame index.
 fn create_buffer(
-    buffer_format: _NV_ENC_BUFFER_FORMAT,
     vulkan_device: Arc<Device>,
     memory_type_index: u32,
     width: u32,
@@ -299,6 +290,7 @@ fn create_buffer(
     i_max: u32,
 ) -> File {
     let size = (width * height * 4) as u64;
+
     // Allocate memory with Vulkan.
     let memory = DeviceMemory::allocate(
         vulkan_device,
@@ -318,6 +310,7 @@ fn create_buffer(
         generate_test_input(content, width, height, i, i_max);
         mapped_memory.flush_range(0..size).unwrap();
     }
+
     // Export the memory.
     mapped_memory
         .unmap()
@@ -325,15 +318,25 @@ fn create_buffer(
         .unwrap()
 }
 
-fn make_vulkan_buffer(
+/// Converts a [`File`] (UNIX file descriptor) into a [`MappedResource`].
+///
+/// # Params
+/// `encoder`: The encoder where the data should be allocated.
+///
+/// `buffer_format`: Buffer format of resource to be registered.
+///
+/// `width`, `height`: The size of data to store.
+///
+/// `file`: The file descriptor pointing towards the (vulkan) buffer that needs to be mapped.
+fn fd_into_nvenc_resource(
     encoder: &Encoder,
     buffer_format: _NV_ENC_BUFFER_FORMAT,
-    memory_type_index: u32,
     width: u32,
     height: u32,
     file: File,
 ) -> MappedResource {
     let size = (width * height * 4) as u64;
+
     // Import file handle with CUDA.
     let mut external_memory: CUexternalMemory = ptr::null_mut();
     let handle_description = CUDA_EXTERNAL_MEMORY_HANDLE_DESC {
@@ -344,18 +347,22 @@ fn make_vulkan_buffer(
         size,
         ..Default::default()
     };
+
     assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
         cuImportExternalMemory(&mut external_memory, &handle_description)
     });
+
     // Get mapped buffer.
     let mut device_ptr: CUdeviceptr = 0;
     let buffer_description = CUDA_EXTERNAL_MEMORY_BUFFER_DESC {
         size,
         ..Default::default()
     };
+
     assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
         cuExternalMemoryGetMappedBuffer(&mut device_ptr, external_memory, &buffer_description)
     });
+
     // Register and map it with NVENC.
     let (input_resource, buf_fmt) = encoder
         .register_and_map_input_resource(
@@ -371,5 +378,4 @@ fn make_vulkan_buffer(
         .unwrap();
     assert_eq!(buffer_format, buf_fmt);
     input_resource
-    // TODO: Should the CUDA mapping, etc. be undone to free the memory?
 }
