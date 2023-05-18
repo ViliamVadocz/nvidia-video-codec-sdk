@@ -42,16 +42,17 @@ use nvidia_video_codec_sdk::{
 
 /// Returns the color `(r, g, b, alpha)` of a pixel on the screen relative to its position on a screen:
 ///
-/// # Params
-/// `width`, `height`: Width and height of the screen.
-///
-/// `x`, `y`, `z`: Coördinates of the pixel on the screen.
-///
-/// # Function
-///
 /// Top right will be red,
 /// bottom left will be green,
 /// all colours will shift towards having more blue as `time` increases.
+///
+/// # Arguments
+///
+/// * `width`, `height` - Width and height of the screen.
+///
+/// * `x`, `y` - Coördinates of the pixel on the screen.
+///
+/// * time - Fraction indicating what part of the animation we are in [0,1]
 fn get_color(width: u32, height: u32, x: u32, y: u32, time: f32) -> (u8, u8, u8, u8) {
     let alpha = 255;
     let red = (255 * x / width) as u8;
@@ -62,11 +63,13 @@ fn get_color(width: u32, height: u32, x: u32, y: u32, time: f32) -> (u8, u8, u8,
 
 /// Generates test frame inputs and sets `buf` to that input.
 ///
-/// `buf`: The buffer in which to put the generated input.
+/// # Arguments
 ///
-/// `width`, `height`: The size of the frames to generate input for.
+/// * `buf` - The buffer in which to put the generated input.
 ///
-/// `i`, `i_max`: The current frame and total amount of frames.
+/// * `width`, `height` - The size of the frames to generate input for.
+///
+/// * `i`, `i_max` - The current frame and total amount of frames.
 fn generate_test_input(buf: &mut [u8], width: u32, height: u32, i: u32, i_max: u32) {
     assert_eq!(buf.len(), (width * height * 4) as usize);
     for y in 0..height {
@@ -273,14 +276,15 @@ fn main() {
 ///
 /// Will be used to create file descriptors for the invidual frames.
 ///
-/// # Params
-/// `vulkan_device`: The device where the data should be allocated.
+/// # Arguments
 ///
-/// `memory_type_index`: The index of the memory type that should be allocated.
+/// * `vulkan_device` - The device where the data should be allocated.
 ///
-/// `width`, `height`: The size of data to store.
+/// * `memory_type_index` - The index of the memory type that should be allocated.
 ///
-/// `i`, `i_max`: The current frame and maximum frame index.
+/// * `width`, `height` - The size of data to store.
+///
+/// * `i`, `i_max`: - The current frame and maximum frame index.
 fn create_buffer(
     vulkan_device: Arc<Device>,
     memory_type_index: u32,
@@ -323,14 +327,15 @@ fn create_buffer(
 
 /// Converts a [`File`] (UNIX file descriptor) into a [`MappedResource`].
 ///
-/// # Params
-/// `encoder`: The encoder where the data should be allocated.
+/// # Arguments
 ///
-/// `buffer_format`: Buffer format of resource to be registered.
+/// * `encoder` - The encoder where the data should be allocated.
 ///
-/// `width`, `height`: The size of data to store.
+/// * `buffer_format` - Buffer format of resource to be registered.
 ///
-/// `file`: The file descriptor pointing towards the (vulkan) buffer that needs to be mapped.
+/// * `width`, `height` - The size of data to store.
+///
+/// * `file` - The file descriptor pointing towards the (vulkan) buffer that needs to be mapped.
 fn fd_into_nvenc_resource(
     encoder: &Encoder,
     buffer_format: _NV_ENC_BUFFER_FORMAT,
