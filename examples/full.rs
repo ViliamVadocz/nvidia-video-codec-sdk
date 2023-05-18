@@ -117,7 +117,9 @@ fn main() {
                 })
         })
         .next()
-        .expect("There should be at least one GPU, which supports a memory type that is `HOST_VISISBLE`");
+        .expect(
+            "There should be at least one GPU which supports a memory type that is `HOST_VISISBLE`",
+        );
 
     // Create a Vulkan device.
     let (vulkan_device, _queues) = Device::new(
@@ -135,12 +137,12 @@ fn main() {
         "Vulkan should be installed correctly and `Device` should support `khr_external_memory_fd`",
     );
 
-    // Create a new [`CudaDevice`] to interact with cuda.
+    // Create a new CudaDevice to interact with cuda.
     let cuda_device = CudaDevice::new(0).expect("Cuda should be installed correctly");
 
     let encoder = ENCODE_API
         .open_encode_session_with_cuda(cuda_device)
-        .expect("Cuda should be installed correctly");
+        .expect("NVENC API initialization should succeed given that the NVIDIA Video Codec SDK has been installed correctly");
 
     // Get all encode guids supported by the GPU.
     let encode_guids = encoder
@@ -167,11 +169,12 @@ fn main() {
     // Get input formats based on the encode guid.
     let input_formats = encoder
         .get_supported_input_formats(encode_guid)
-        .expect("The encoder should be able to receive inputs");
+        .expect("The encoder should be able to receive input buffer formats");
     let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
     assert!(input_formats.contains(&buffer_format));
 
-    // Get the preset config based on the selected encode guid (H.264) and selected preset (`LOW_LATENCY`).
+    // Get the preset config based on the selected encode guid (H.264), selected preset (`LOW_LATENCY`),
+    // and tuning info (`ULTRA_LOW_LATENCY`).
     let mut preset_config = encoder
         .get_preset_config(
             encode_guid,
@@ -191,7 +194,7 @@ fn main() {
         )
         .expect("Encoder should be initialised correctly");
 
-    // Calculate the number of buffs we need based on the interval of P frames and(+) the look ahead depth
+    // Calculate the number of buffers we need based on the interval of P frames and the look ahead depth.
     let num_bufs = usize::try_from(preset_config.presetCfg.frameIntervalP)
         .expect("frame intervalP should always be positive")
         + usize::try_from(preset_config.presetCfg.rcParams.lookaheadDepth)
@@ -211,7 +214,7 @@ fn main() {
         .create(true)
         .truncate(true)
         .open("test.bin")
-        .expect("Should be able to acces the file system and create a new file");
+        .expect("Permissions and available space should allow creating a new file");
 
     // Create Vulkan buffers
     // 4.1.2. Input buffers allocated externally
@@ -253,7 +256,7 @@ fn main() {
             .expect("Buffer should be fully filled and not locked");
         out_file
             .write_all(out)
-            .expect("Should be able to acces the file system and write to a `out_file`");
+            .expect("Writing should succeed because `out_file` was opened with write permissions");
     }
 
     // Notifying the End of Input Stream with end of stream picture.
@@ -269,10 +272,10 @@ fn main() {
 
     out_file
         .write_all(out)
-        .expect("Should be able to acces the file system and write to a `out_file`");
+        .expect("Writing should succeed because `out_file` was opened with write permissions");
 }
 
-/// Creates allocates memory on a vulkan [`Device`] and returns a [`File`] (file descriptor) to that data.
+/// Allocates memory on a Vulkan [`Device`] and returns a [`File`] (file descriptor) to that data.
 ///
 /// Will be used to create file descriptors for the invidual frames.
 ///
@@ -313,7 +316,7 @@ fn create_buffer(
     unsafe {
         let content = mapped_memory
             .write(0..size)
-            .expect("There should be no other devices writing to this memory");
+            .expect("The physical device and memory type is HOST_VISIBLE");
         generate_test_input(content, width, height, i, i_max);
         mapped_memory.flush_range(0..size).expect("There should be no other devices writing to this memory and size should also fit within the size");
     }
