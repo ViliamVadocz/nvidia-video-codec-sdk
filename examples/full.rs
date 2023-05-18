@@ -214,7 +214,7 @@ fn main() {
     // 4.1.2. Input buffers allocated externally
 
     // Generate each of the frames.
-    let file_descriptors = (1..FRAMES)
+    let file_descriptors = (0..FRAMES)
         .map(|f| {
             create_buffer(
                 vulkan_device.clone(),
