@@ -68,9 +68,7 @@ use vulkano::{
 /// # Arguments
 ///
 /// * `width`, `height` - Width and height of the screen.
-///
 /// * `x`, `y` - Coördinates of the pixel on the screen.
-///
 /// * time - Fraction indicating what part of the animation we are in [0,1]
 fn get_color(width: u32, height: u32, x: u32, y: u32, time: f32) -> (u8, u8, u8, u8) {
     let alpha = 255;
@@ -285,7 +283,7 @@ fn main() {
     let output_buffer = &mut output_buffers[0];
     encoder
         .encode_picture(NV_ENC_PIC_PARAMS::end_of_stream())
-        .expect("Should be able to encode empty end of stream file");
+        .expect("Should be able to encode end of stream notification");
 
     let out = output_buffer
         .lock_and_read()
