@@ -11,19 +11,9 @@ use super::{
     result::EncodeResult,
 };
 use crate::sys::nvEncodeAPI::{
-    GUID,
-    NV_ENC_BUFFER_FORMAT,
-    NV_ENC_CODEC_PIC_PARAMS,
-    NV_ENC_CONFIG,
-    NV_ENC_CONFIG_VER,
-    NV_ENC_INITIALIZE_PARAMS,
-    NV_ENC_INITIALIZE_PARAMS_VER,
-    NV_ENC_PIC_FLAGS,
-    NV_ENC_PIC_PARAMS,
-    NV_ENC_PIC_PARAMS_VER,
-    NV_ENC_PIC_STRUCT,
-    NV_ENC_PRESET_CONFIG,
-    NV_ENC_PRESET_CONFIG_VER,
+    GUID, NV_ENC_BUFFER_FORMAT, NV_ENC_CODEC_PIC_PARAMS, NV_ENC_CONFIG, NV_ENC_CONFIG_VER,
+    NV_ENC_INITIALIZE_PARAMS, NV_ENC_INITIALIZE_PARAMS_VER, NV_ENC_PIC_FLAGS, NV_ENC_PIC_PARAMS,
+    NV_ENC_PIC_PARAMS_VER, NV_ENC_PIC_STRUCT, NV_ENC_PRESET_CONFIG, NV_ENC_PRESET_CONFIG_VER,
     NV_ENC_TUNING_INFO,
 };
 
@@ -262,6 +252,14 @@ impl NV_ENC_PIC_PARAMS {
     }
 
     #[must_use]
+    pub fn end_of_stream() -> Self {
+        NV_ENC_PIC_PARAMS {
+            encodePicFlags: NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32,
+            ..Default::default()
+        }
+    }
+
+    #[must_use]
     pub fn pitch(mut self, pitch: u32) -> Self {
         self.inputPitch = pitch;
         self
@@ -276,12 +274,6 @@ impl NV_ENC_PIC_PARAMS {
     #[must_use]
     pub fn codec_pic_params(mut self, codec_pic_params: NV_ENC_CODEC_PIC_PARAMS) -> Self {
         self.codecPicParams = codec_pic_params;
-        self
-    }
-
-    #[must_use]
-    pub fn end_of_stream(mut self) -> Self {
-        self.encodePicFlags |= NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32;
         self
     }
 
