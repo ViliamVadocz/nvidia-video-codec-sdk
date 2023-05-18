@@ -254,6 +254,7 @@ impl NV_ENC_PIC_PARAMS {
     #[must_use]
     pub fn end_of_stream() -> Self {
         NV_ENC_PIC_PARAMS {
+            version: NV_ENC_PIC_PARAMS_VER,
             encodePicFlags: NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32,
             ..Default::default()
         }
