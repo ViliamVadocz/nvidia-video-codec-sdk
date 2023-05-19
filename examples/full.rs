@@ -83,9 +83,7 @@ fn get_color(width: u32, height: u32, x: u32, y: u32, time: f32) -> (u8, u8, u8,
 /// # Arguments
 ///
 /// * `buf` - The buffer in which to put the generated input.
-///
 /// * `width`, `height` - The size of the frames to generate input for.
-///
 /// * `i`, `i_max` - The current frame and total amount of frames.
 fn generate_test_input(buf: &mut [u8], width: u32, height: u32, i: u32, i_max: u32) {
     assert_eq!(buf.len(), (width * height * 4) as usize);
@@ -102,7 +100,12 @@ fn generate_test_input(buf: &mut [u8], width: u32, height: u32, i: u32, i_max: u
     }
 }
 
-/// Creates a bitstream for a 128 frame, 1920x1080 video.
+/// Creates an encoded bitstream for a 128 frame, 1920x1080 video.
+/// This bitstream will be writtin to ./test.bin
+/// To view this bitstream use a decoder like ffmpeg.
+///
+/// For ffmpeg use `ffmpeg -i test.bin -vcodec copy test.mp4` to
+/// decode the video.
 fn main() {
     const WIDTH: u32 = 1920;
     const HEIGHT: u32 = 1080;
@@ -279,19 +282,10 @@ fn main() {
     }
 
     // Notifying the End of Input Stream with end of stream picture.
-    // Note that output is still generated here.
-    let output_buffer = &mut output_buffers[0];
+    // This does not produce a frame.
     encoder
         .encode_picture(NV_ENC_PIC_PARAMS::end_of_stream())
         .expect("Should be able to encode end of stream notification");
-
-    let out = output_buffer
-        .lock_and_read()
-        .expect("Buffer should be fully filled and not locked");
-
-    out_file
-        .write_all(out)
-        .expect("Writing should succeed because `out_file` was opened with write permissions");
 }
 
 /// Allocates memory on a Vulkan [`Device`] and returns a [`File`] (file
@@ -302,12 +296,9 @@ fn main() {
 /// # Arguments
 ///
 /// * `vulkan_device` - The device where the data should be allocated.
-///
 /// * `memory_type_index` - The index of the memory type that should be
 ///   allocated.
-///
 /// * `width`, `height` - The size of data to store.
-///
 /// * `i`, `i_max`: - The current frame and maximum frame index.
 fn create_buffer(
     vulkan_device: Arc<Device>,
@@ -354,11 +345,8 @@ fn create_buffer(
 /// # Arguments
 ///
 /// * `encoder` - The encoder where the data should be allocated.
-///
 /// * `buffer_format` - Buffer format of resource to be registered.
-///
 /// * `width`, `height` - The size of data to store.
-///
 /// * `file` - The file descriptor pointing towards the (vulkan) buffer that
 ///   needs to be mapped.
 fn fd_into_nvenc_resource(
