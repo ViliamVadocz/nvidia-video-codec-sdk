@@ -24,7 +24,7 @@ use cudarc::driver::{
 #[allow(deprecated)]
 use nvidia_video_codec_sdk::sys::nvEncodeAPI::NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
 use nvidia_video_codec_sdk::{
-    safe::{api::ENCODE_API, buffer::MappedResource, encoder::Encoder},
+    safe::{buffer::MappedResource, encoder::Encoder},
     sys::nvEncodeAPI::{
         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
         NV_ENC_CODEC_H264_GUID,
@@ -157,12 +157,10 @@ fn main() {
     // Create a new CudaDevice to interact with cuda.
     let cuda_device = CudaDevice::new(0).expect("Cuda should be installed correctly");
 
-    let encoder = ENCODE_API
-        .open_encode_session_with_cuda(cuda_device)
-        .expect(
-            "NVENC API initialization should succeed given that the NVIDIA Video Codec SDK has \
-             been installed correctly",
-        );
+    let encoder = Encoder::cuda(cuda_device).expect(
+        "NVENC API initialization should succeed given that the NVIDIA Video Codec SDK has been \
+         installed correctly",
+    );
 
     // Get all encode guids supported by the GPU.
     let encode_guids = encoder
