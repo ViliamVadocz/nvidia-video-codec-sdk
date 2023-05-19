@@ -1,5 +1,6 @@
 use std::{
     ffi::{c_void, CStr},
+    ptr,
     sync::Arc,
 };
 
@@ -12,12 +13,16 @@ use super::{
 };
 use crate::sys::nvEncodeAPI::{
     GUID,
+    NVENCAPI_VERSION,
     NV_ENC_BUFFER_FORMAT,
     NV_ENC_CODEC_PIC_PARAMS,
     NV_ENC_CONFIG,
     NV_ENC_CONFIG_VER,
+    NV_ENC_DEVICE_TYPE,
     NV_ENC_INITIALIZE_PARAMS,
     NV_ENC_INITIALIZE_PARAMS_VER,
+    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
+    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
     NV_ENC_PIC_FLAGS,
     NV_ENC_PIC_PARAMS,
     NV_ENC_PIC_PARAMS_VER,
@@ -45,12 +50,33 @@ impl Drop for Encoder {
 }
 
 impl Encoder {
-    pub(crate) fn new(ptr: *mut c_void, device: Device) -> Self {
-        Self {
-            ptr,
-            _device: device,
-        }
+    pub fn cuda(cuda_device: Arc<CudaDevice>) -> EncodeResult<Self> {
+        let mut encoder = ptr::null_mut();
+        let mut session_params = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS {
+            version: NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
+            deviceType: NV_ENC_DEVICE_TYPE::NV_ENC_DEVICE_TYPE_CUDA,
+            apiVersion: NVENCAPI_VERSION,
+            // Pass the CUDA Context as the device.
+            device: (*cuda_device.cu_primary_ctx()).cast::<c_void>(),
+            ..Default::default()
+        };
+
+        if let err @ Err(_) =
+            unsafe { (ENCODE_API.open_encode_session_ex)(&mut session_params, &mut encoder) }
+                .result()
+        {
+            // We are required to destroy the encoder if there was an error.
+            unsafe { (ENCODE_API.destroy_encoder)(encoder) }.result()?;
+            err?;
+        };
+
+        Ok(Encoder {
+            ptr: encoder,
+            _device: cuda_device,
+        })
     }
+
+    // TODO: other encode devices
 
     #[must_use]
     pub fn get_last_error_string(&self) -> &CStr {
