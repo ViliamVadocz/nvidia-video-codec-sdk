@@ -123,7 +123,7 @@ type GetSequenceParamEx = unsafe extern "C" fn(
 /// An instance of the `NvEncodeAPI` interface, containing function pointers
 /// which should be used to interface with the rest of the Encoder API.
 #[allow(dead_code)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct EncodeAPI {
     /// NvEncOpenEncodeSession
     pub(crate) open_encode_session: OpenEncodeSession,

@@ -1,6 +1,6 @@
 use std::{ffi::c_void, ptr};
 
-use super::{api::ENCODE_API, encoder::Encoder, result::EncodeResult};
+use super::{api::ENCODE_API, encoder::Encoder, result::EncodeError};
 use crate::sys::nvEncodeAPI::{
     NV_ENC_BUFFER_FORMAT,
     NV_ENC_BUFFER_USAGE,
@@ -38,7 +38,7 @@ impl Encoder {
         width: u32,
         height: u32,
         buffer_format: NV_ENC_BUFFER_FORMAT,
-    ) -> EncodeResult<Buffer> {
+    ) -> Result<Buffer, EncodeError> {
         let mut create_input_buffer_params = NV_ENC_CREATE_INPUT_BUFFER {
             version: NV_ENC_CREATE_INPUT_BUFFER_VER,
             width,
@@ -57,7 +57,7 @@ impl Encoder {
 }
 
 impl<'a> Buffer<'a> {
-    pub fn lock_and_write(&mut self, do_not_wait: bool, data: &[u8]) -> EncodeResult<()> {
+    pub fn lock_and_write(&mut self, do_not_wait: bool, data: &[u8]) -> Result<(), EncodeError> {
         let mut lock_input_buffer_params = NV_ENC_LOCK_INPUT_BUFFER {
             version: NV_ENC_LOCK_INPUT_BUFFER_VER,
             inputBuffer: self.ptr,
@@ -99,7 +99,7 @@ pub struct Bitstream<'a> {
 }
 
 impl Encoder {
-    pub fn create_output_bitstream(&self) -> EncodeResult<Bitstream> {
+    pub fn create_output_bitstream(&self) -> Result<Bitstream, EncodeError> {
         let mut create_bitstream_buffer_params = NV_ENC_CREATE_BITSTREAM_BUFFER {
             version: NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
             bitstreamBuffer: ptr::null_mut(),
@@ -117,7 +117,7 @@ impl Encoder {
 }
 
 impl<'a> Bitstream<'a> {
-    pub fn lock_and_read(&mut self) -> EncodeResult<&[u8]> {
+    pub fn lock_and_read(&mut self) -> Result<&[u8], EncodeError> {
         // Lock bitstream.
         let mut lock_bitstream_buffer_params = NV_ENC_LOCK_BITSTREAM {
             version: NV_ENC_LOCK_BITSTREAM_VER,
@@ -163,7 +163,7 @@ impl Encoder {
     pub fn register_and_map_input_resource(
         &self,
         mut register_resource_params: NV_ENC_REGISTER_RESOURCE,
-    ) -> EncodeResult<(MappedResource, NV_ENC_BUFFER_FORMAT)> {
+    ) -> Result<(MappedResource, NV_ENC_BUFFER_FORMAT), EncodeError> {
         // Currently it looks like
         assert_eq!(
             register_resource_params.bufferUsage,

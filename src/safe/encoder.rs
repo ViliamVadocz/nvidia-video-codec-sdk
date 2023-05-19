@@ -9,7 +9,7 @@ use cudarc::driver::CudaDevice;
 use super::{
     api::ENCODE_API,
     buffer::{EncoderInput, EncoderOutput},
-    result::EncodeResult,
+    result::EncodeError,
 };
 use crate::sys::nvEncodeAPI::{
     GUID,
@@ -50,7 +50,7 @@ impl Drop for Encoder {
 }
 
 impl Encoder {
-    pub fn cuda(cuda_device: Arc<CudaDevice>) -> EncodeResult<Self> {
+    pub fn cuda(cuda_device: Arc<CudaDevice>) -> Result<Self, EncodeError> {
         let mut encoder = ptr::null_mut();
         let mut session_params = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS {
             version: NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
@@ -83,7 +83,7 @@ impl Encoder {
         unsafe { CStr::from_ptr((ENCODE_API.get_last_error_string)(self.ptr)) }
     }
 
-    pub fn get_encode_guids(&self) -> EncodeResult<Vec<GUID>> {
+    pub fn get_encode_guids(&self) -> Result<Vec<GUID>, EncodeError> {
         // Query number of supported encoder codec GUIDs.
         let mut supported_count = 0;
         unsafe { (ENCODE_API.get_encode_guid_count)(self.ptr, &mut supported_count) }.result()?;
@@ -103,7 +103,7 @@ impl Encoder {
         Ok(encode_guids)
     }
 
-    pub fn get_preset_guids(&self, encode_guid: GUID) -> EncodeResult<Vec<GUID>> {
+    pub fn get_preset_guids(&self, encode_guid: GUID) -> Result<Vec<GUID>, EncodeError> {
         // Query the number of preset GUIDS.
         let mut preset_count = 0;
         unsafe { (ENCODE_API.get_encode_preset_count)(self.ptr, encode_guid, &mut preset_count) }
@@ -125,7 +125,7 @@ impl Encoder {
         Ok(preset_guids)
     }
 
-    pub fn get_profile_guids(&self, encode_guid: GUID) -> EncodeResult<Vec<GUID>> {
+    pub fn get_profile_guids(&self, encode_guid: GUID) -> Result<Vec<GUID>, EncodeError> {
         // Query the number of profile GUIDs.
         let mut profile_count = 0;
         unsafe {
@@ -152,7 +152,7 @@ impl Encoder {
     pub fn get_supported_input_formats(
         &self,
         encode_guid: GUID,
-    ) -> EncodeResult<Vec<NV_ENC_BUFFER_FORMAT>> {
+    ) -> Result<Vec<NV_ENC_BUFFER_FORMAT>, EncodeError> {
         // Query the number of supported input formats.
         let mut format_count = 0;
         unsafe { (ENCODE_API.get_input_format_count)(self.ptr, encode_guid, &mut format_count) }
@@ -180,7 +180,7 @@ impl Encoder {
         encode_guid: GUID,
         preset_guid: GUID,
         tuning_info: NV_ENC_TUNING_INFO,
-    ) -> EncodeResult<NV_ENC_PRESET_CONFIG> {
+    ) -> Result<NV_ENC_PRESET_CONFIG, EncodeError> {
         let mut preset_config = NV_ENC_PRESET_CONFIG {
             version: NV_ENC_PRESET_CONFIG_VER,
             presetCfg: NV_ENC_CONFIG {
@@ -205,11 +205,14 @@ impl Encoder {
     pub fn initialize_encoder_session(
         &self,
         mut initialize_params: NV_ENC_INITIALIZE_PARAMS,
-    ) -> EncodeResult<()> {
+    ) -> Result<(), EncodeError> {
         unsafe { (ENCODE_API.initialize_encoder)(self.ptr, &mut initialize_params) }.result()
     }
 
-    pub fn encode_picture(&self, mut encode_pic_params: NV_ENC_PIC_PARAMS) -> EncodeResult<()> {
+    pub fn encode_picture(
+        &self,
+        mut encode_pic_params: NV_ENC_PIC_PARAMS,
+    ) -> Result<(), EncodeError> {
         unsafe { (ENCODE_API.encode_picture)(self.ptr, &mut encode_pic_params) }.result()
     }
 }
