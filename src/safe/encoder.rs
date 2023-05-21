@@ -1,6 +1,6 @@
 use std::{
     ffi::{c_void, CStr},
-    ptr,
+    mem::MaybeUninit,
     sync::Arc,
 };
 
@@ -34,24 +34,58 @@ use crate::sys::nvEncodeAPI::{
 
 type Device = Arc<CudaDevice>;
 
+/// Entrypoint for the Encoder API.
+///
+/// The general usage follows these steps:
+/// 1. Initialize the encoder.
+/// 2. Set up the desired encoding parameters.
+/// 3. Allocate or register input and output buffers.
+/// 4. Copy frames to input buffers, encode, and read out of output bitstream.
+/// 5. Close the encoding session and clean up.
+///
+/// With this wrapper cleanup is performed automatically.
+/// To do the other steps this struct provides associated functions
+/// such as [`Encoder::get_encode_guids`], [`Encoder::encode_picture`],
+/// and [`Encoder::create_input_buffer`].
+///
+/// See the [NVIDIA Video Codec SDK Encoder Programming Guide](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html).
 pub struct Encoder {
     pub(crate) ptr: *mut c_void,
     // Used to make sure that CudaDevice stays alive while the Encoder does
     _device: Device,
 }
 
+/// The client must flush the encoder before freeing any resources.
+/// Do this by sending an EOS encode picture packet.
+/// The client must free all the input and output resources before
+/// destroying the encoder.
+/// If using events, they must also be unregistered.
 impl Drop for Encoder {
     fn drop(&mut self) {
-        // Destroy encoder when it goes out of scope.
         unsafe { (ENCODE_API.destroy_encoder)(self.ptr) }
             .result()
-            .unwrap();
+            .expect("The encoder pointer should be valid.");
     }
 }
 
 impl Encoder {
+    /// Create an [`Encoder`] with CUDA as the encode device.
+    ///
+    /// # Errors
+    ///
+    /// Could error if there was no encode capable device detected
+    /// or if the encode device was invalid.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::Encoder;
+    /// let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// ```
     pub fn cuda(cuda_device: Arc<CudaDevice>) -> Result<Self, EncodeError> {
-        let mut encoder = ptr::null_mut();
+        let mut encoder = MaybeUninit::uninit();
         let mut session_params = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS {
             version: NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
             deviceType: NV_ENC_DEVICE_TYPE::NV_ENC_DEVICE_TYPE_CUDA,
@@ -61,23 +95,45 @@ impl Encoder {
             ..Default::default()
         };
 
-        if let err @ Err(_) =
-            unsafe { (ENCODE_API.open_encode_session_ex)(&mut session_params, &mut encoder) }
-                .result()
+        if let err @ Err(_) = unsafe {
+            (ENCODE_API.open_encode_session_ex)(&mut session_params, encoder.as_mut_ptr())
+        }
+        .result()
         {
             // We are required to destroy the encoder if there was an error.
-            unsafe { (ENCODE_API.destroy_encoder)(encoder) }.result()?;
+            unsafe { (ENCODE_API.destroy_encoder)(encoder.assume_init()) }.result()?;
             err?;
         };
 
         Ok(Encoder {
-            ptr: encoder,
+            ptr: unsafe { encoder.assume_init() },
             _device: cuda_device,
         })
     }
 
     // TODO: other encode devices
 
+    /// Get the description of the last error reported by the API.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{Encoder, EncodeError, sys::nvEncodeAPI::GUID};
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// // Cause an error by passing in an invalid GUID.
+    /// assert_eq!(
+    ///     encoder.get_supported_input_formats(GUID::default()),
+    ///     Err(EncodeError::InvalidParam)
+    /// );
+    /// // Get the error message.
+    /// // Unfortunately, it's not always helpful.
+    /// assert_eq!(
+    ///     encoder.get_last_error_string().to_string_lossy(),
+    ///     "EncodeAPI Internal Error."
+    /// );
+    /// ```
     #[must_use]
     pub fn get_last_error_string(&self) -> &CStr {
         unsafe { CStr::from_ptr((ENCODE_API.get_last_error_string)(self.ptr)) }

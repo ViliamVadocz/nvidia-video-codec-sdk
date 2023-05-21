@@ -23,3 +23,5 @@ pub mod sys;
 
 #[macro_use]
 extern crate lazy_static;
+
+pub use safe::*;
