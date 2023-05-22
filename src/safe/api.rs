@@ -209,8 +209,10 @@ pub(crate) struct EncodeAPI {
 }
 
 fn assert_versions_match(max_supported_version: u32) {
+    let major_version = max_supported_version >> 4;
+    let minor_version = max_supported_version & 0b1111;
     assert!(
-        max_supported_version >= NVENCAPI_MAJOR_VERSION << 4 | (NVENCAPI_MINOR_VERSION & 0b1111),
+        (major_version, minor_version) >= (NVENCAPI_MAJOR_VERSION, NVENCAPI_MINOR_VERSION),
         "The maximum supported version should be greater or equal than the header version."
     );
 }
