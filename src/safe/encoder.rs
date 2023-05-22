@@ -71,6 +71,8 @@ impl Drop for Encoder {
 impl Encoder {
     /// Create an [`Encoder`] with CUDA as the encode device.
     ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#cuda).
+    ///
     /// # Errors
     ///
     /// Could error if there was no encode capable device detected
@@ -139,33 +141,87 @@ impl Encoder {
         unsafe { CStr::from_ptr((ENCODE_API.get_last_error_string)(self.ptr)) }
     }
 
+    /// Get the encode GUIDs which the encoder supports.
+    ///
+    /// You should use this function to check whether your
+    /// machine supports the video compression standard
+    /// that you with to use.
+    ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#selecting-encoder-codec-guid).
+    ///
+    /// # Errors
+    ///
+    /// Could error if we run out of memory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{Encoder, sys::nvEncodeAPI::NV_ENC_CODEC_H264_GUID};
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// let encode_guids = encoder.get_encode_guids().unwrap();
+    /// // Confirm that this machine support encoding to H.264.
+    /// assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
+    /// ```
     pub fn get_encode_guids(&self) -> Result<Vec<GUID>, EncodeError> {
         // Query number of supported encoder codec GUIDs.
-        let mut supported_count = 0;
-        unsafe { (ENCODE_API.get_encode_guid_count)(self.ptr, &mut supported_count) }.result()?;
+        let mut supported_count = MaybeUninit::uninit();
+        unsafe { (ENCODE_API.get_encode_guid_count)(self.ptr, supported_count.as_mut_ptr()) }
+            .result()?;
+        let supported_count = unsafe { supported_count.assume_init() };
         // Get the supported GUIDs.
         let mut encode_guids = vec![GUID::default(); supported_count as usize];
-        let mut actual_count: u32 = 0;
+        let mut actual_count = MaybeUninit::uninit();
         unsafe {
             (ENCODE_API.get_encode_guids)(
                 self.ptr,
                 encode_guids.as_mut_ptr(),
                 supported_count,
-                &mut actual_count,
+                actual_count.as_mut_ptr(),
             )
         }
         .result()?;
-        encode_guids.truncate(actual_count as usize);
+        encode_guids.truncate(unsafe { actual_count.assume_init() } as usize);
         Ok(encode_guids)
     }
 
+    /// Get the encode preset GUIDs which the encoder supports
+    /// for the given codec GUID.
+    ///
+    /// You should use this function to check whether your
+    /// machine supports the encode preset that you wish to use.
+    ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#selecting-encoder-preset-configuration).
+    ///
+    /// # Errors
+    ///
+    /// Could error if the encode GUID is invalid
+    /// or we run out of memory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{Encoder, sys::nvEncodeAPI::{NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_P1_GUID}};
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// # let encode_guids = encoder.get_encode_guids().unwrap();
+    /// # assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
+    /// let preset_guids = encoder.get_preset_guids(NV_ENC_CODEC_H264_GUID).unwrap();
+    /// // Confirm that H.264 support the P1 preset (high performance, low quality) on this machine.
+    /// assert!(preset_guids.contains(&NV_ENC_PRESET_P1_GUID));
+    /// ```
     pub fn get_preset_guids(&self, encode_guid: GUID) -> Result<Vec<GUID>, EncodeError> {
         // Query the number of preset GUIDS.
-        let mut preset_count = 0;
-        unsafe { (ENCODE_API.get_encode_preset_count)(self.ptr, encode_guid, &mut preset_count) }
-            .result()?;
+        let mut preset_count = MaybeUninit::uninit();
+        unsafe {
+            (ENCODE_API.get_encode_preset_count)(self.ptr, encode_guid, preset_count.as_mut_ptr())
+        }
+        .result()?;
+        let preset_count = unsafe { preset_count.assume_init() };
         // Get the preset GUIDs.
-        let mut actual_count: u32 = 0;
+        let mut actual_count = MaybeUninit::uninit();
         let mut preset_guids = vec![GUID::default(); preset_count as usize];
         unsafe {
             (ENCODE_API.get_encode_preset_guids)(
@@ -173,35 +229,66 @@ impl Encoder {
                 encode_guid,
                 preset_guids.as_mut_ptr(),
                 preset_count,
-                &mut actual_count,
+                actual_count.as_mut_ptr(),
             )
         }
         .result()?;
-        preset_guids.truncate(actual_count as usize);
+        preset_guids.truncate(unsafe { actual_count.assume_init() } as usize);
         Ok(preset_guids)
     }
 
+    /// Get the encode profile GUIDs which the encoder supports
+    /// for the given codec GUID.
+    ///
+    /// You should use this function to check whether your
+    /// machine supports the encode profile that you wish to use.
+    ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#selecting-an-encoder-profile).
+    ///
+    /// # Errors
+    ///
+    /// Could error if the encode GUID is invalid
+    /// or we run out of memory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{Encoder, sys::nvEncodeAPI::{NV_ENC_CODEC_H264_GUID, NV_ENC_H264_PROFILE_HIGH_GUID}};
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// # let encode_guids = encoder.get_encode_guids().unwrap();
+    /// # assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
+    /// let profile_guids = encoder.get_profile_guids(NV_ENC_CODEC_H264_GUID).unwrap();
+    /// // Confirm that H.264 support the HIGH profile on this machine.
+    /// assert!(profile_guids.contains(&NV_ENC_H264_PROFILE_HIGH_GUID));
+    /// ```
     pub fn get_profile_guids(&self, encode_guid: GUID) -> Result<Vec<GUID>, EncodeError> {
         // Query the number of profile GUIDs.
-        let mut profile_count = 0;
+        let mut profile_count = MaybeUninit::uninit();
         unsafe {
-            (ENCODE_API.get_encode_profile_guid_count)(self.ptr, encode_guid, &mut profile_count)
+            (ENCODE_API.get_encode_profile_guid_count)(
+                self.ptr,
+                encode_guid,
+                profile_count.as_mut_ptr(),
+            )
         }
         .result()?;
+        let profile_count = unsafe { profile_count.assume_init() };
         // Get the profile GUIDs.
         let mut profile_guids = vec![GUID::default(); profile_count as usize];
-        let mut actual_count: u32 = 0;
+        let mut actual_count = MaybeUninit::uninit();
         unsafe {
             (ENCODE_API.get_encode_profile_guids)(
                 self.ptr,
                 encode_guid,
                 profile_guids.as_mut_ptr(),
                 profile_count,
-                &mut actual_count,
+                actual_count.as_mut_ptr(),
             )
         }
         .result()?;
-        profile_guids.truncate(actual_count as usize);
+        profile_guids.truncate(unsafe { actual_count.assume_init() } as usize);
         Ok(profile_guids)
     }
 
@@ -259,19 +346,54 @@ impl Encoder {
     }
 
     pub fn initialize_encoder_session(
-        &self,
+        self,
         mut initialize_params: NV_ENC_INITIALIZE_PARAMS,
-    ) -> Result<(), EncodeError> {
-        unsafe { (ENCODE_API.initialize_encoder)(self.ptr, &mut initialize_params) }.result()
+    ) -> Result<Session, EncodeError> {
+        unsafe { (ENCODE_API.initialize_encoder)(self.ptr, &mut initialize_params) }.result()?;
+        Ok(Session { encoder: self })
+    }
+}
+
+pub struct Session {
+    encoder: Encoder,
+}
+
+impl Session {
+    pub fn get_encoder(&self) -> &Encoder {
+        &self.encoder
     }
 
+    /// Encode a frame.
+    ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#submitting-input-frame-for-encoding).
+    ///
+    /// # Errors
+    ///
+    /// Could error if the encode picture parameters were invalid or otherwise
+    /// incorrect, or if we run out memory.
+    ///
+    /// There are two recoverable errors:
+    /// - If this returns [`EncodeError::EncoderBusy`] then you should retry
+    ///   after a few milliseconds.
+    /// - If this returns [`EncodeError::NeedMoreInput`], the client should not
+    ///   lock the output bitstream yet. They should continue encoding until
+    ///   this function returns `Ok`, and then lock the bitstreams in the order
+    ///   in which they were originally used.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // TODO
+    /// ```
     pub fn encode_picture(
         &self,
         mut encode_pic_params: NV_ENC_PIC_PARAMS,
     ) -> Result<(), EncodeError> {
-        unsafe { (ENCODE_API.encode_picture)(self.ptr, &mut encode_pic_params) }.result()
+        unsafe { (ENCODE_API.encode_picture)(self.encoder.ptr, &mut encode_pic_params) }.result()
     }
 }
+
+// TODO: Implement Drop for session which sends EOS
 
 // Builder pattern
 impl NV_ENC_INITIALIZE_PARAMS {
