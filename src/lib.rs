@@ -7,6 +7,8 @@
 #![warn(missing_docs)]
 #![warn(clippy::pedantic)]
 #![warn(clippy::unwrap_used)]
+#![warn(missing_debug_implementations)]
+#![warn(missing_copy_implementations)]
 
 /// Safe wrapper around the raw bindings.
 ///

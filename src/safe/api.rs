@@ -219,7 +219,7 @@ fn assert_versions_match(max_supported_version: u32) {
 
 impl EncodeAPI {
     fn new() -> Self {
-        const MSG: &str = "The API instance should populate the whole function list";
+        const MSG: &str = "The API instance should populate the whole function list.";
 
         // Check that the driver max supported version matches the version
         // from the header files. If they do not match, the bindings should be updated.

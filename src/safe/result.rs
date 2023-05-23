@@ -38,8 +38,8 @@ pub enum EncodeError {
     /// An unsupported parameter was passed by the client.
     UnsupportedParam = 12,
     /// The [`EncodeAPI.lock_bitstream`] failed to lock the output
-    /// buffer. This happens when the client makes a non blocking lock call
-    /// to access the output bitstream by passing the `do_not_wait` flag.
+    /// buffer. This happens when the client makes a non-blocking lock call
+    /// to access the output bitstream by passing the `doNotWait` flag.
     /// This is not a fatal error and client should retry the same operation
     /// after few milliseconds.
     LockBusy = 13,

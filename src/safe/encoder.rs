@@ -45,10 +45,15 @@ type Device = Arc<CudaDevice>;
 ///
 /// With this wrapper cleanup is performed automatically.
 /// To do the other steps this struct provides associated functions
-/// such as [`Encoder::get_encode_guids`], [`Encoder::encode_picture`],
-/// and [`Encoder::create_input_buffer`].
+/// such as [`Encoder::get_encode_guids`] or [`Encoder::get_input_formats`].
+///
+/// Once the configuration is completed, a session should be initialized with
+/// [`Encoder::initialize_encoder_session`] to get a [`Session`].
+/// This type has further function to create input and output buffers
+/// and encode pictures.
 ///
 /// See the [NVIDIA Video Codec SDK Encoder Programming Guide](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html).
+#[derive(Debug)]
 pub struct Encoder {
     pub(crate) ptr: *mut c_void,
     // Used to make sure that CudaDevice stays alive while the Encoder does
@@ -85,9 +90,9 @@ impl Encoder {
     /// # use cudarc::driver::CudaDevice;
     /// # use nvidia_video_codec_sdk::Encoder;
     /// let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     /// ```
-    pub fn cuda(cuda_device: Arc<CudaDevice>) -> Result<Self, EncodeError> {
+    pub fn initialize_with_cuda(cuda_device: Arc<CudaDevice>) -> Result<Self, EncodeError> {
         let mut encoder = MaybeUninit::uninit();
         let mut session_params = NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS {
             version: NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
@@ -126,7 +131,7 @@ impl Encoder {
     /// # use cudarc::driver::CudaDevice;
     /// # use nvidia_video_codec_sdk::{sys::nvEncodeAPI::GUID, EncodeError, Encoder};
     /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     /// // Cause an error by passing in an invalid GUID.
     /// assert_eq!(
     ///     encoder.get_supported_input_formats(GUID::default()),
@@ -162,7 +167,7 @@ impl Encoder {
     /// # use cudarc::driver::CudaDevice;
     /// # use nvidia_video_codec_sdk::{sys::nvEncodeAPI::NV_ENC_CODEC_H264_GUID, Encoder};
     /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     /// let encode_guids = encoder.get_encode_guids().unwrap();
     /// // Confirm that this machine support encoding to H.264.
     /// assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
@@ -211,7 +216,7 @@ impl Encoder {
     /// #     Encoder,
     /// # };
     /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     ///
     /// //* Check if H.264 encoding is supported. *//
     /// # let encode_guids = encoder.get_encode_guids().unwrap();
@@ -268,7 +273,7 @@ impl Encoder {
     /// #     Encoder,
     /// # };
     /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     ///
     /// //* Check if H.264 encoding is supported. *//
     /// # let encode_guids = encoder.get_encode_guids().unwrap();
@@ -329,7 +334,7 @@ impl Encoder {
     /// #     Encoder,
     /// # };
     /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     ///
     /// //* Check if H.264 encoding is supported. *//
     /// # let encode_guids = encoder.get_encode_guids().unwrap();
@@ -401,7 +406,7 @@ impl Encoder {
     /// #     Encoder,
     /// # };
     /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     ///
     /// //* Check if H.264 encoding and the low latency preset are supported. *//
     /// # let encode_guids = encoder.get_encode_guids().unwrap();
@@ -471,7 +476,7 @@ impl Encoder {
     /// #     Encoder,
     /// # };
     /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     ///
     /// //* Check if `NV_ENC_CODEC_H264_GUID` is supported. *//
     /// # let encode_guids = encoder.get_encode_guids().unwrap();
@@ -496,9 +501,10 @@ impl Encoder {
 }
 
 /// An encoding session. You need to call
-/// [`Encoder::initialize_encoding_session`] before you can encode frames using
+/// [`Encoder::initialize_encoder_session`] before you can encode frames using
 /// the session. On drop, the session will automatically send an empty EOS frame
 /// to flush the encoder.
+#[derive(Debug)]
 pub struct Session {
     pub(crate) encoder: Encoder,
 }
@@ -517,8 +523,9 @@ impl Session {
     /// #     sys::nvEncodeAPI::{NV_ENC_CODEC_H264_GUID, NV_ENC_INITIALIZE_PARAMS},
     /// #     Encoder,
     /// # };
+    /// //* Create encoder. *//
     /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// # let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     ///
     /// //* Set `encode_guid` and check that H.264 encoding is supported. *//
     /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
@@ -571,8 +578,10 @@ impl Session {
     /// # };
     /// # const WIDTH: u32 = 1920;
     /// # const HEIGHT: u32 = 1080;
+    /// # const DATA_LEN: usize = (WIDTH * HEIGHT * 4) as usize;
+    /// //* Create encoder. *//
     /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    /// # let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     ///
     /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
     /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
@@ -592,16 +601,14 @@ impl Session {
     ///     )
     ///     .unwrap();
     ///
-    /// // Create input and output buffers.
-    /// let mut input_buffer = session
-    ///     .create_input_buffer(WIDTH, HEIGHT, buffer_format)
-    ///     .unwrap();
-    /// let mut output_bitstream = session.create_output_bitstream().unwrap();
+    /// //* Create input and output buffers. *//
+    /// # let mut input_buffer = session
+    /// #     .create_input_buffer(WIDTH, HEIGHT, buffer_format)
+    /// #     .unwrap();
+    /// # let mut output_bitstream = session.create_output_bitstream().unwrap();
     ///
     /// // Encode frame.
-    /// input_buffer
-    ///     .lock_and_write(false, &[0; (WIDTH * HEIGHT * 4) as usize])
-    ///     .unwrap();
+    /// unsafe { input_buffer.lock().unwrap().write(&[0; DATA_LEN]) };
     /// session
     ///     .encode_picture(NV_ENC_PIC_PARAMS::new(
     ///         WIDTH,
@@ -612,9 +619,8 @@ impl Session {
     ///         NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
     ///     ))
     ///     .unwrap();
-    ///
-    /// // TODO: check that output is correct.
-    /// let _data = output_bitstream.lock_and_read().unwrap();
+    /// # // TODO: check that output is correct.
+    /// let _data = output_bitstream.lock_and_read(true).unwrap();
     /// ```
     pub fn encode_picture(
         &self,
@@ -627,8 +633,9 @@ impl Session {
 /// Send an EOS notifications on drop to flush the encoder.
 impl Drop for Session {
     fn drop(&mut self) {
-        self.encode_picture(NV_ENC_PIC_PARAMS::end_of_stream())
-            .expect("Should always be able to encode EOS frame");
+        while let Err(EncodeError::EncoderBusy) =
+            self.encode_picture(NV_ENC_PIC_PARAMS::end_of_stream())
+        {}
     }
 }
 
@@ -699,6 +706,16 @@ impl NV_ENC_INITIALIZE_PARAMS {
 
 impl NV_ENC_PIC_PARAMS {
     /// Builder for [`NV_ENC_PIC_PARAMS`].
+    ///
+    /// # Arguments
+    ///
+    /// * `width` - Input frame width.
+    /// * `height` - Input frame height.
+    /// * `input_buffer` - Input buffer which implements [`EncoderInput`].
+    /// * `output_bitstream` - Output bitstream buffer which implements
+    ///   [`EncoderOutput`].
+    /// * `buffer_format` - Input buffer format.
+    /// * `picture_struct` - The structure of the input picture.
     #[must_use]
     pub fn new<INPUT: EncoderInput, OUTPUT: EncoderOutput>(
         width: u32,
