@@ -1,29 +1,15 @@
 use std::{
-    ffi::{c_int, c_void},
+    ffi::c_void,
     fs::{File, OpenOptions},
     io::Write,
-    os::fd::AsRawFd,
-    ptr,
     sync::Arc,
 };
 
-use cudarc::driver::{
-    sys::{
-        cuExternalMemoryGetMappedBuffer,
-        cuImportExternalMemory,
-        CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1,
-        CUdeviceptr,
-        CUexternalMemory,
-        CUexternalMemoryHandleType,
-        CUresult,
-        CUDA_EXTERNAL_MEMORY_BUFFER_DESC,
-        CUDA_EXTERNAL_MEMORY_HANDLE_DESC,
-    },
-    CudaDevice,
-};
+use cudarc::driver::{CudaDevice, DevicePtr};
 #[allow(deprecated)]
 use nvidia_video_codec_sdk::sys::nvEncodeAPI::NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
 use nvidia_video_codec_sdk::{
+    encoder::Session,
     safe::{buffer::MappedResource, encoder::Encoder},
     sys::nvEncodeAPI::{
         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
@@ -63,12 +49,12 @@ use vulkano::{
 ///
 /// Top right will be red,
 /// bottom left will be green,
-/// all colours will shift towards having more blue as `time` increases.
+/// all colors will shift towards having more blue as `time` increases.
 ///
 /// # Arguments
 ///
 /// * `width`, `height` - Width and height of the screen.
-/// * `x`, `y` - Coördinates of the pixel on the screen.
+/// * `x`, `y` - Coordinates of the pixel on the screen.
 /// * time - Fraction indicating what part of the animation we are in [0,1]
 fn get_color(width: u32, height: u32, x: u32, y: u32, time: f32) -> (u8, u8, u8, u8) {
     let alpha = 255;
@@ -101,7 +87,7 @@ fn generate_test_input(buf: &mut [u8], width: u32, height: u32, i: u32, i_max: u
 }
 
 /// Creates an encoded bitstream for a 128 frame, 1920x1080 video.
-/// This bitstream will be writtin to ./test.bin
+/// This bitstream will be written to ./test.bin
 /// To view this bitstream use a decoder like ffmpeg.
 ///
 /// For ffmpeg use `ffmpeg -i test.bin -vcodec copy test.mp4` to
@@ -138,7 +124,7 @@ fn main() {
         })
         .next()
         .expect(
-            "There should be at least one GPU which supports a memory type that is `HOST_VISISBLE`",
+            "There should be at least one GPU which supports a memory type that is `HOST_VISIBLE`",
         );
 
     // Create a Vulkan device.
@@ -157,7 +143,7 @@ fn main() {
     // Create a new CudaDevice to interact with cuda.
     let cuda_device = CudaDevice::new(0).expect("Cuda should be installed correctly");
 
-    let encoder = Encoder::cuda(cuda_device).expect(
+    let encoder = Encoder::initialize_with_cuda(cuda_device.clone()).expect(
         "NVENC API initialization should succeed given that the NVIDIA Video Codec SDK has been \
          installed correctly",
     );
@@ -201,9 +187,9 @@ fn main() {
         )
         .expect("Encoder should be able to create config based on presets");
 
-    // Initialise a new encoder session based on the `preset_config` we generated
-    // before.
-    encoder
+    // Initialize a new encoder session based on the `preset_config`
+    // we generated before.
+    let session = encoder
         .initialize_encoder_session(
             NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
                 .display_aspect_ratio(16, 9)
@@ -211,7 +197,7 @@ fn main() {
                 .enable_picture_type_decision()
                 .encode_config(&mut preset_config.presetCfg),
         )
-        .expect("Encoder should be initialised correctly");
+        .expect("Encoder should be initialized correctly");
 
     // Calculate the number of buffers we need based on the interval of P frames and
     // the look ahead depth.
@@ -222,7 +208,7 @@ fn main() {
 
     let mut output_buffers: Vec<_> = (0..num_bufs)
         .map(|_| {
-            encoder
+            session
                 .create_output_bitstream()
                 .expect("The encoder should be able to create bitstreams")
         })
@@ -236,10 +222,7 @@ fn main() {
         .open("test.bin")
         .expect("Permissions and available space should allow creating a new file");
 
-    // Create Vulkan buffers
-    // 4.1.2. Input buffers allocated externally
-
-    // Generate each of the frames.
+    // Generate each of the frames with Vulkan.
     let file_descriptors = (0..FRAMES)
         .map(|f| {
             create_buffer(
@@ -257,10 +240,16 @@ fn main() {
     for (i, file_descriptor) in file_descriptors.into_iter().enumerate() {
         let output_buffer = &mut output_buffers[i % num_bufs];
 
-        let mut input_buffer =
-            fd_into_nvenc_resource(&encoder, buffer_format, WIDTH, HEIGHT, file_descriptor);
+        let mut input_buffer = fd_into_nvenc_resource(
+            &session,
+            cuda_device.clone(),
+            buffer_format,
+            WIDTH,
+            HEIGHT,
+            file_descriptor,
+        );
 
-        encoder
+        session
             .encode_picture(NV_ENC_PIC_PARAMS::new(
                 WIDTH,
                 HEIGHT,
@@ -272,18 +261,12 @@ fn main() {
             .expect("Encoder should be able to encode valid pictures");
 
         let out = output_buffer
-            .lock_and_read()
-            .expect("Buffer should be fully filled and not locked");
+            .lock_and_read(true)
+            .expect("Bitstream lock should be available.");
         out_file
             .write_all(out)
             .expect("Writing should succeed because `out_file` was opened with write permissions");
     }
-
-    // Notifying the End of Input Stream with end of stream picture.
-    // This does not produce a frame.
-    encoder
-        .encode_picture(NV_ENC_PIC_PARAMS::end_of_stream())
-        .expect("Should be able to encode end of stream notification");
 }
 
 /// Allocates memory on a Vulkan [`Device`] and returns a [`File`] (file
@@ -348,39 +331,16 @@ fn create_buffer(
 /// * `file` - The file descriptor pointing towards the (vulkan) buffer that
 ///   needs to be mapped.
 fn fd_into_nvenc_resource(
-    encoder: &Encoder,
+    encoder: &Session,
+    cuda_device: Arc<CudaDevice>,
     buffer_format: _NV_ENC_BUFFER_FORMAT,
     width: u32,
     height: u32,
     file: File,
 ) -> MappedResource {
     let size = (width * height * 4) as u64;
-
-    // Import file handle with CUDA.
-    let mut external_memory: CUexternalMemory = ptr::null_mut();
-    let handle_description = CUDA_EXTERNAL_MEMORY_HANDLE_DESC {
-        type_: CUexternalMemoryHandleType::CU_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD,
-        handle: CUDA_EXTERNAL_MEMORY_HANDLE_DESC_st__bindgen_ty_1 {
-            fd: file.as_raw_fd() as c_int,
-        },
-        size,
-        ..Default::default()
-    };
-
-    assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
-        cuImportExternalMemory(&mut external_memory, &handle_description)
-    });
-
-    // Get mapped buffer.
-    let mut device_ptr: CUdeviceptr = 0;
-    let buffer_description = CUDA_EXTERNAL_MEMORY_BUFFER_DESC {
-        size,
-        ..Default::default()
-    };
-
-    assert_eq!(CUresult::CUDA_SUCCESS, unsafe {
-        cuExternalMemoryGetMappedBuffer(&mut device_ptr, external_memory, &buffer_description)
-    });
+    let mut external_memory = unsafe { cuda_device.import_external_memory(file, size) }.unwrap();
+    let mapped_buffer = external_memory.map_all().unwrap();
 
     // Register and map it with NVENC.
     let (input_resource, buf_fmt) = encoder
@@ -389,7 +349,7 @@ fn fd_into_nvenc_resource(
                 NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
                 width,
                 height,
-                device_ptr as *mut c_void,
+                *mapped_buffer.device_ptr() as *mut c_void,
                 buffer_format,
             )
             .pitch(width * 4),
