@@ -127,85 +127,85 @@ type GetSequenceParamEx = unsafe extern "C" fn(
 #[derive(Debug, Clone)]
 pub struct EncodeAPI {
     /// NvEncOpenEncodeSession
-    pub(crate) open_encode_session: OpenEncodeSession,
+    pub open_encode_session: OpenEncodeSession,
     /// NvEncOpenEncodeSessionEx
-    pub(crate) open_encode_session_ex: OpenEncodeSessionEx,
+    pub open_encode_session_ex: OpenEncodeSessionEx,
     /// NvEncInitializeEncoder
-    pub(crate) initialize_encoder: InitializeEncoder,
+    pub initialize_encoder: InitializeEncoder,
     /// NvEncReconfigureEncoder
-    pub(crate) reconfigure_encoder: ReconfigureEncoder,
+    pub reconfigure_encoder: ReconfigureEncoder,
     /// NvEncDestroyEncoder
-    pub(crate) destroy_encoder: DestroyEncoder,
+    pub destroy_encoder: DestroyEncoder,
     /// NvEncGetEncodeGuidCount
-    pub(crate) get_encode_guid_count: GetEncodeGUIDCount,
+    pub get_encode_guid_count: GetEncodeGUIDCount,
     /// NvEncGetEncodeGUIDs
-    pub(crate) get_encode_guids: GetEncodeGUIDs,
+    pub get_encode_guids: GetEncodeGUIDs,
     /// NvEncGetEncodeProfileGuidCount
-    pub(crate) get_encode_profile_guid_count: GetEncodeProfileGUIDCount,
+    pub get_encode_profile_guid_count: GetEncodeProfileGUIDCount,
     /// NvEncGetEncodeProfileGUIDs
-    pub(crate) get_encode_profile_guids: GetEncodeProfileGUIDs,
+    pub get_encode_profile_guids: GetEncodeProfileGUIDs,
     /// NvEncGetInputFormatCount
-    pub(crate) get_input_format_count: GetInputFormatCount,
+    pub get_input_format_count: GetInputFormatCount,
     /// NvEncGetInputFormats
-    pub(crate) get_input_formats: GetInputFormats,
+    pub get_input_formats: GetInputFormats,
     /// NvEncGetEncodePresetCount
-    pub(crate) get_encode_preset_count: GetEncodePresetCount,
+    pub get_encode_preset_count: GetEncodePresetCount,
     /// NvEncGetEncodePresetGUIDs
-    pub(crate) get_encode_preset_guids: GetEncodePresetGUIDs,
+    pub get_encode_preset_guids: GetEncodePresetGUIDs,
     /// NvEncGetEncodePresetConfig
-    pub(crate) get_encode_preset_config: GetEncodePresetConfig,
+    pub get_encode_preset_config: GetEncodePresetConfig,
     /// NvEncGetEncodePresetConfigEx
-    pub(crate) get_encode_preset_config_ex: GetEncodePresetConfigEx,
+    pub get_encode_preset_config_ex: GetEncodePresetConfigEx,
     /// NvEncGetEncodeCaps
-    pub(crate) get_encode_caps: GetEncodeCaps,
+    pub get_encode_caps: GetEncodeCaps,
     /// NvEncCreateInputBuffer
-    pub(crate) create_input_buffer: CreateInputBuffer,
+    pub create_input_buffer: CreateInputBuffer,
     /// NvEncDestroyInputBuffer
-    pub(crate) destroy_input_buffer: DestroyInputBuffer,
+    pub destroy_input_buffer: DestroyInputBuffer,
     /// NvLockInputBuffer
-    pub(crate) lock_input_buffer: LockInputBuffer,
+    pub lock_input_buffer: LockInputBuffer,
     /// NvUnlockInputBuffer
-    pub(crate) unlock_input_buffer: UnlockInputBuffer,
+    pub unlock_input_buffer: UnlockInputBuffer,
     /// NvEncCreateBitstreamBuffer
-    pub(crate) create_bitstream_buffer: CreateBitstreamBuffer,
+    pub create_bitstream_buffer: CreateBitstreamBuffer,
     /// NvEncDestroyBitstreamBuffer
-    pub(crate) destroy_bitstream_buffer: DestroyBitstreamBuffer,
+    pub destroy_bitstream_buffer: DestroyBitstreamBuffer,
     /// NvEncLockBitstream
-    pub(crate) lock_bitstream: LockBitstream,
+    pub lock_bitstream: LockBitstream,
     /// NvEncUnlockBitstream
-    pub(crate) unlock_bitstream: UnlockBitstream,
+    pub unlock_bitstream: UnlockBitstream,
     /// NvEncMapInputResource
-    pub(crate) map_input_resource: MapInputResource,
+    pub map_input_resource: MapInputResource,
     /// NvEncUnmapInputResource
-    pub(crate) unmap_input_resource: UnmapInputResource,
+    pub unmap_input_resource: UnmapInputResource,
     /// NvEncRegisterResource
-    pub(crate) register_resource: RegisterResource,
+    pub register_resource: RegisterResource,
     /// NvEncUnregisterResource
-    pub(crate) unregister_resource: UnregisterResource,
+    pub unregister_resource: UnregisterResource,
     /// NvEncCreateMVBuffer
-    pub(crate) create_mv_buffer: CreateMVBuffer,
+    pub create_mv_buffer: CreateMVBuffer,
     /// NvEncDestroyMVBuffer
-    pub(crate) destroy_mv_buffer: DestroyMVBuffer,
+    pub destroy_mv_buffer: DestroyMVBuffer,
     /// NvEncEncodePicture
-    pub(crate) encode_picture: EncodePicture,
+    pub encode_picture: EncodePicture,
     /// NvEncGetEncodeStats
-    pub(crate) get_encode_stats: GetEncodeStats,
+    pub get_encode_stats: GetEncodeStats,
     /// NvEncGetSequenceParams
-    pub(crate) get_sequence_params: GetSequenceParams,
+    pub get_sequence_params: GetSequenceParams,
     /// NvEncGetSequenceParamEx
-    pub(crate) get_sequence_param_ex: GetSequenceParamEx,
+    pub get_sequence_param_ex: GetSequenceParamEx,
     /// NvEncRegisterAsyncEvent
-    pub(crate) register_async_event: RegisterAsyncEvent,
+    pub register_async_event: RegisterAsyncEvent,
     /// NvEncUnregisterAsyncEvent
-    pub(crate) unregister_async_event: UnregisterAsyncEvent,
+    pub unregister_async_event: UnregisterAsyncEvent,
     /// NvEncInvalidateRefFrames
-    pub(crate) invalidate_ref_frames: InvalidateRefFrames,
+    pub invalidate_ref_frames: InvalidateRefFrames,
     /// NvEncRunMotionEstimationOnly
-    pub(crate) run_motion_estimation_only: RunMotionEstimationOnly,
+    pub run_motion_estimation_only: RunMotionEstimationOnly,
     /// NvEncGetLastErrorString
-    pub(crate) get_last_error_string: GetLastErrorString,
+    pub get_last_error_string: GetLastErrorString,
     /// NvEncSetIOCudaStreams
-    pub(crate) set_io_cuda_streams: SetIOCudaStreams,
+    pub set_io_cuda_streams: SetIOCudaStreams,
 }
 
 fn assert_versions_match(max_supported_version: u32) {

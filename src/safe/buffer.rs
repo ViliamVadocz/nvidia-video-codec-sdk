@@ -246,7 +246,7 @@ impl<'a> Buffer<'a> {
     /// let lock1 = input_buffer.lock().unwrap();
     /// let lock2 = input_buffer.try_lock();
     /// // FIXME: Apparently two locks are Ok?
-    /// // assert_eq!(lock2.unwrap_err(), EncodeError::LockBusy);
+    /// assert_eq!(lock2.unwrap_err(), EncodeError::LockBusy);
     /// drop(lock1)
     /// ```
     pub fn try_lock<'b>(&'b self) -> Result<Lock<'b, 'a>, EncodeError> {
@@ -539,22 +539,20 @@ impl Session {
     ///
     /// // Allocate memory with CUDA.
     /// let cuda_slice = cuda_device.alloc_zeros::<u8>(DATA_LEN).unwrap();
-    /// let device_ptr = cuda_slice.leak();
     ///
+    /// // FIXME: Fails for unknown reason.
     /// // Register and map the resource.
     /// let (_mapped_resource, buf_fmt) = session.register_and_map_input_resource(
     ///     NV_ENC_REGISTER_RESOURCE::new(
     ///         NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
     ///         WIDTH,
     ///         HEIGHT,
-    ///         device_ptr as *mut c_void,
+    ///         *cuda_slice.device_ptr() as *mut c_void,
     ///         buffer_format,
     ///     )
     ///     .pitch(WIDTH * 4), // ARGB format has 4 bytes per pixel.
     /// ).unwrap();
     /// assert_eq!(buffer_format, buf_fmt);
-    ///
-    /// let _cuda_slice: CudaSlice<u8> = unsafe { cuda_device.upgrade_device_ptr(device_ptr, DATA_LEN) };
     /// ```
     pub fn register_and_map_input_resource(
         &self,

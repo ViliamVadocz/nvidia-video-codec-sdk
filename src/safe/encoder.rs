@@ -45,7 +45,8 @@ type Device = Arc<CudaDevice>;
 ///
 /// With this wrapper cleanup is performed automatically.
 /// To do the other steps this struct provides associated functions
-/// such as [`Encoder::get_encode_guids`] or [`Encoder::get_input_formats`].
+/// such as [`Encoder::get_encode_guids`] or
+/// [`Encoder::get_supported_input_formats`].
 ///
 /// Once the configuration is completed, a session should be initialized with
 /// [`Encoder::initialize_encoder_session`] to get a [`Session`].
