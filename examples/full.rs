@@ -240,14 +240,27 @@ fn main() {
     for (i, file_descriptor) in file_descriptors.into_iter().enumerate() {
         let output_buffer = &mut output_buffers[i % num_bufs];
 
-        let mut input_buffer = fd_into_nvenc_resource(
-            &session,
-            cuda_device.clone(),
-            buffer_format,
-            WIDTH,
-            HEIGHT,
-            file_descriptor,
-        );
+        // Import file descriptor using CUDA.
+        let mut external_memory = unsafe {
+            cuda_device.import_external_memory(file_descriptor, (WIDTH * HEIGHT * 4) as u64)
+        }
+        .unwrap();
+        let mapped_buffer = external_memory.map_all().unwrap();
+
+        // Register and map with NVENC.
+        let (mut input_buffer, buf_fmt) = session
+            .register_and_map_input_resource(
+                NV_ENC_REGISTER_RESOURCE::new(
+                    NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
+                    WIDTH,
+                    HEIGHT,
+                    *mapped_buffer.device_ptr() as *mut c_void,
+                    buffer_format,
+                )
+                .pitch(WIDTH * 4),
+            )
+            .expect("Should be able to register buffer with right size as nvenc resource");
+        assert_eq!(buffer_format, buf_fmt);
 
         session
             .encode_picture(NV_ENC_PIC_PARAMS::new(
@@ -266,6 +279,11 @@ fn main() {
         out_file
             .write_all(out)
             .expect("Writing should succeed because `out_file` was opened with write permissions");
+
+        // Drop registered resource before dropping the CUDA mapped buffer.
+        // TODO: `MappedResource` should store a reference or `PhantomData`
+        // to enforce drop order.
+        drop(input_buffer);
     }
 }
 
@@ -319,42 +337,4 @@ fn create_buffer(
         .unmap()
         .export_fd(ExternalMemoryHandleType::OpaqueFd)
         .expect("The memory should be able to be turned into a file handle if we are on UNIX")
-}
-
-/// Converts a [`File`] (UNIX file descriptor) into a [`MappedResource`].
-///
-/// # Arguments
-///
-/// * `encoder` - The encoder where the data should be allocated.
-/// * `buffer_format` - Buffer format of resource to be registered.
-/// * `width`, `height` - The size of data to store.
-/// * `file` - The file descriptor pointing towards the (vulkan) buffer that
-///   needs to be mapped.
-fn fd_into_nvenc_resource(
-    encoder: &Session,
-    cuda_device: Arc<CudaDevice>,
-    buffer_format: _NV_ENC_BUFFER_FORMAT,
-    width: u32,
-    height: u32,
-    file: File,
-) -> MappedResource {
-    let size = (width * height * 4) as u64;
-    let mut external_memory = unsafe { cuda_device.import_external_memory(file, size) }.unwrap();
-    let mapped_buffer = external_memory.map_all().unwrap();
-
-    // Register and map it with NVENC.
-    let (input_resource, buf_fmt) = encoder
-        .register_and_map_input_resource(
-            NV_ENC_REGISTER_RESOURCE::new(
-                NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
-                width,
-                height,
-                *mapped_buffer.device_ptr() as *mut c_void,
-                buffer_format,
-            )
-            .pitch(width * 4),
-        )
-        .expect("Should be able to register buffer with right size as nvenc resource");
-    assert_eq!(buffer_format, buf_fmt);
-    input_resource
 }
