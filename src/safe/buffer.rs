@@ -1,6 +1,10 @@
 use std::{ffi::c_void, ptr};
 
-use super::{api::ENCODE_API, encoder::Encoder, result::EncodeError};
+use super::{
+    api::ENCODE_API,
+    encoder::{Encoder, Session},
+    result::EncodeError,
+};
 use crate::sys::nvEncodeAPI::{
     NV_ENC_BUFFER_FORMAT,
     NV_ENC_BUFFER_USAGE,
@@ -32,7 +36,7 @@ pub struct Buffer<'a> {
     encoder: &'a Encoder,
 }
 
-impl Encoder {
+impl Session {
     pub fn create_input_buffer(
         &self,
         width: u32,
@@ -47,11 +51,13 @@ impl Encoder {
             inputBuffer: ptr::null_mut(),
             ..Default::default()
         };
-        unsafe { (ENCODE_API.create_input_buffer)(self.ptr, &mut create_input_buffer_params) }
-            .result()?;
+        unsafe {
+            (ENCODE_API.create_input_buffer)(self.encoder.ptr, &mut create_input_buffer_params)
+        }
+        .result()?;
         Ok(Buffer {
             ptr: create_input_buffer_params.inputBuffer,
-            encoder: self,
+            encoder: &self.encoder,
         })
     }
 }
@@ -98,7 +104,7 @@ pub struct Bitstream<'a> {
     encoder: &'a Encoder,
 }
 
-impl Encoder {
+impl Session {
     pub fn create_output_bitstream(&self) -> Result<Bitstream, EncodeError> {
         let mut create_bitstream_buffer_params = NV_ENC_CREATE_BITSTREAM_BUFFER {
             version: NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
@@ -106,12 +112,15 @@ impl Encoder {
             ..Default::default()
         };
         unsafe {
-            (ENCODE_API.create_bitstream_buffer)(self.ptr, &mut create_bitstream_buffer_params)
+            (ENCODE_API.create_bitstream_buffer)(
+                self.encoder.ptr,
+                &mut create_bitstream_buffer_params,
+            )
         }
         .result()?;
         Ok(Bitstream {
             ptr: create_bitstream_buffer_params.bitstreamBuffer,
-            encoder: self,
+            encoder: &self.encoder,
         })
     }
 }
@@ -159,7 +168,7 @@ pub struct MappedResource<'a> {
     encoder: &'a Encoder,
 }
 
-impl Encoder {
+impl Session {
     pub fn register_and_map_input_resource(
         &self,
         mut register_resource_params: NV_ENC_REGISTER_RESOURCE,
@@ -171,7 +180,7 @@ impl Encoder {
         );
 
         // Register resource.
-        unsafe { (ENCODE_API.register_resource)(self.ptr, &mut register_resource_params) }
+        unsafe { (ENCODE_API.register_resource)(self.encoder.ptr, &mut register_resource_params) }
             .result()?;
         let registered_resource = register_resource_params.registeredResource;
 
@@ -183,8 +192,10 @@ impl Encoder {
             mappedBufferFmt: NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_UNDEFINED,
             ..Default::default()
         };
-        unsafe { (ENCODE_API.map_input_resource)(self.ptr, &mut map_input_resource_params) }
-            .result()?;
+        unsafe {
+            (ENCODE_API.map_input_resource)(self.encoder.ptr, &mut map_input_resource_params)
+        }
+        .result()?;
 
         let mapped_resource = map_input_resource_params.mappedResource;
         let input_buffer_format = map_input_resource_params.mappedBufferFmt;
@@ -192,7 +203,7 @@ impl Encoder {
             MappedResource {
                 reg_ptr: registered_resource,
                 map_ptr: mapped_resource,
-                encoder: self,
+                encoder: &self.encoder,
             },
             input_buffer_format,
         ))

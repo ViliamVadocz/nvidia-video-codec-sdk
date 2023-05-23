@@ -56,7 +56,8 @@ pub struct Encoder {
 }
 
 /// The client must flush the encoder before freeing any resources.
-/// Do this by sending an EOS encode picture packet.
+/// Do this by sending an EOS encode picture packet
+/// (This is done automatically when [`Session`] is dropped).
 /// The client must free all the input and output resources before
 /// destroying the encoder.
 /// If using events, they must also be unregistered.
@@ -113,7 +114,9 @@ impl Encoder {
         })
     }
 
-    // TODO: other encode devices
+    // TODO:
+    // - Make Encoder generic in Device.
+    // - Add functions to create Encoder from other encode devices.
 
     /// Get the description of the last error reported by the API.
     ///
@@ -121,7 +124,7 @@ impl Encoder {
     ///
     /// ```
     /// # use cudarc::driver::CudaDevice;
-    /// # use nvidia_video_codec_sdk::{Encoder, EncodeError, sys::nvEncodeAPI::GUID};
+    /// # use nvidia_video_codec_sdk::{sys::nvEncodeAPI::GUID, EncodeError, Encoder};
     /// # let cuda_device = CudaDevice::new(0).unwrap();
     /// let encoder = Encoder::cuda(cuda_device).unwrap();
     /// // Cause an error by passing in an invalid GUID.
@@ -157,7 +160,7 @@ impl Encoder {
     ///
     /// ```
     /// # use cudarc::driver::CudaDevice;
-    /// # use nvidia_video_codec_sdk::{Encoder, sys::nvEncodeAPI::NV_ENC_CODEC_H264_GUID};
+    /// # use nvidia_video_codec_sdk::{sys::nvEncodeAPI::NV_ENC_CODEC_H264_GUID, Encoder};
     /// # let cuda_device = CudaDevice::new(0).unwrap();
     /// let encoder = Encoder::cuda(cuda_device).unwrap();
     /// let encode_guids = encoder.get_encode_guids().unwrap();
@@ -203,11 +206,17 @@ impl Encoder {
     ///
     /// ```
     /// # use cudarc::driver::CudaDevice;
-    /// # use nvidia_video_codec_sdk::{Encoder, sys::nvEncodeAPI::{NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_P1_GUID}};
+    /// # use nvidia_video_codec_sdk::{
+    /// #     sys::nvEncodeAPI::{NV_ENC_CODEC_H264_GUID, NV_ENC_PRESET_P1_GUID},
+    /// #     Encoder,
+    /// # };
     /// # let cuda_device = CudaDevice::new(0).unwrap();
     /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    ///
+    /// //* Check if H.264 encoding is supported. *//
     /// # let encode_guids = encoder.get_encode_guids().unwrap();
     /// # assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
+    ///
     /// let preset_guids = encoder.get_preset_guids(NV_ENC_CODEC_H264_GUID).unwrap();
     /// // Confirm that H.264 support the P1 preset (high performance, low quality) on this machine.
     /// assert!(preset_guids.contains(&NV_ENC_PRESET_P1_GUID));
@@ -254,13 +263,19 @@ impl Encoder {
     ///
     /// ```
     /// # use cudarc::driver::CudaDevice;
-    /// # use nvidia_video_codec_sdk::{Encoder, sys::nvEncodeAPI::{NV_ENC_CODEC_H264_GUID, NV_ENC_H264_PROFILE_HIGH_GUID}};
+    /// # use nvidia_video_codec_sdk::{
+    /// #     sys::nvEncodeAPI::{NV_ENC_CODEC_H264_GUID, NV_ENC_H264_PROFILE_HIGH_GUID},
+    /// #     Encoder,
+    /// # };
     /// # let cuda_device = CudaDevice::new(0).unwrap();
     /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    ///
+    /// //* Check if H.264 encoding is supported. *//
     /// # let encode_guids = encoder.get_encode_guids().unwrap();
     /// # assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
+    ///
     /// let profile_guids = encoder.get_profile_guids(NV_ENC_CODEC_H264_GUID).unwrap();
-    /// // Confirm that H.264 support the HIGH profile on this machine.
+    /// // Confirm that H.264 supports the HIGH profile on this machine.
     /// assert!(profile_guids.contains(&NV_ENC_H264_PROFILE_HIGH_GUID));
     /// ```
     pub fn get_profile_guids(&self, encode_guid: GUID) -> Result<Vec<GUID>, EncodeError> {
@@ -292,32 +307,117 @@ impl Encoder {
         Ok(profile_guids)
     }
 
+    /// Get the buffer formats which the encoder supports
+    /// for the given codec GUID.
+    ///
+    /// You should use this function to check whether your
+    /// machine supports the buffer format that you wish to use.
+    ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#getting-supported-list-of-input-formats).
+    ///
+    /// # Errors
+    ///
+    /// Could error if the encode GUID is invalid
+    /// or we run out of memory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{
+    /// #     sys::nvEncodeAPI::{NV_ENC_BUFFER_FORMAT, NV_ENC_CODEC_H264_GUID},
+    /// #     Encoder,
+    /// # };
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    ///
+    /// //* Check if H.264 encoding is supported. *//
+    /// # let encode_guids = encoder.get_encode_guids().unwrap();
+    /// # assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
+    ///
+    /// let input_guids = encoder
+    ///     .get_supported_input_formats(NV_ENC_CODEC_H264_GUID)
+    ///     .unwrap();
+    /// // Confirm that H.264 supports the `ARGB10` format on this machine.
+    /// assert!(input_guids.contains(&NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB10));
+    /// ```
     pub fn get_supported_input_formats(
         &self,
         encode_guid: GUID,
     ) -> Result<Vec<NV_ENC_BUFFER_FORMAT>, EncodeError> {
         // Query the number of supported input formats.
-        let mut format_count = 0;
-        unsafe { (ENCODE_API.get_input_format_count)(self.ptr, encode_guid, &mut format_count) }
-            .result()?;
+        let mut format_count = MaybeUninit::uninit();
+        unsafe {
+            (ENCODE_API.get_input_format_count)(self.ptr, encode_guid, format_count.as_mut_ptr())
+        }
+        .result()?;
+        let format_count = unsafe { format_count.assume_init() };
         // Get the supported input formats.
         let mut supported_input_formats =
             vec![NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_UNDEFINED; format_count as usize];
-        let mut actual_count: u32 = 0;
+        let mut actual_count = MaybeUninit::uninit();
         unsafe {
             (ENCODE_API.get_input_formats)(
                 self.ptr,
                 encode_guid,
                 supported_input_formats.as_mut_ptr(),
                 format_count,
-                &mut actual_count,
+                actual_count.as_mut_ptr(),
             )
         }
         .result()?;
-        supported_input_formats.truncate(actual_count as usize);
+        supported_input_formats.truncate(unsafe { actual_count.assume_init() } as usize);
         Ok(supported_input_formats)
     }
 
+    /// Get the preset config struct from the given codec GUID, preset GUID,
+    /// and tuning info.
+    ///
+    /// You should use this function to generate a preset config for the
+    /// encoder session if you want to modify the preset further.
+    ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#selecting-encoder-preset-configuration)
+    ///
+    /// # Errors
+    ///
+    /// Could error if `encode_guid` or `preset_guid` is invalid,
+    /// if `tuning_info` is set to
+    /// [`NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_UNDEFINED`] or
+    /// [`NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_COUNT`],
+    /// or if we run out of memory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #![allow(deprecated)]
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{
+    /// #     sys::nvEncodeAPI::{
+    /// #         NV_ENC_CODEC_H264_GUID,
+    /// #         NV_ENC_PRESET_LOW_LATENCY_HQ_GUID,
+    /// #         NV_ENC_PRESET_P1_GUID,
+    /// #         NV_ENC_TUNING_INFO,
+    /// #     },
+    /// #     Encoder,
+    /// # };
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    ///
+    /// //* Check if H.264 encoding and the low latency preset are supported. *//
+    /// # let encode_guids = encoder.get_encode_guids().unwrap();
+    /// # assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
+    /// # let preset_guids = encoder.get_preset_guids(NV_ENC_CODEC_H264_GUID).unwrap();
+    /// # assert!(preset_guids.contains(&NV_ENC_PRESET_LOW_LATENCY_HQ_GUID));
+    ///
+    /// // Create the preset config.
+    /// let _preset_config = encoder
+    ///     .get_preset_config(
+    ///         NV_ENC_CODEC_H264_GUID,
+    ///         NV_ENC_PRESET_LOW_LATENCY_HQ_GUID,
+    ///         NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY,
+    ///     )
+    ///     .unwrap();
+    /// ```
     pub fn get_preset_config(
         &self,
         encode_guid: GUID,
@@ -345,6 +445,47 @@ impl Encoder {
         Ok(preset_config)
     }
 
+    /// Initialize an encoder session with the given configuration.
+    ///
+    /// You must do this before you can encode a picture.
+    /// You should use the [`NV_ENC_INITIALIZE_PARAMS`] builder
+    /// via [`NV_ENC_INITIALIZE_PARAMS::new`].
+    ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#initializing-the-hardware-encoder-session).
+    ///
+    /// # Errors
+    ///
+    /// Could error if the `initialize_params` are invalid
+    /// or if we run out of memory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{
+    /// #     sys::nvEncodeAPI::{
+    /// #         NV_ENC_CODEC_H264_GUID,
+    /// #         NV_ENC_INITIALIZE_PARAMS,
+    /// #         NV_ENC_PRESET_LOW_LATENCY_HP_GUID,
+    /// #     },
+    /// #     Encoder,
+    /// # };
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    ///
+    /// //* Check if `NV_ENC_CODEC_H264_GUID` is supported. *//
+    /// # let encode_guids = encoder.get_encode_guids().unwrap();
+    /// # assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
+    ///
+    /// // Initialize the encoder session.
+    /// let _session = encoder
+    ///     .initialize_encoder_session(NV_ENC_INITIALIZE_PARAMS::new(
+    ///         NV_ENC_CODEC_H264_GUID,
+    ///         1920,
+    ///         1080,
+    ///     ))
+    ///     .unwrap();
+    /// ```
     pub fn initialize_encoder_session(
         self,
         mut initialize_params: NV_ENC_INITIALIZE_PARAMS,
@@ -354,11 +495,45 @@ impl Encoder {
     }
 }
 
+/// An encoding session. You need to call
+/// [`Encoder::initialize_encoding_session`] before you can encode frames using
+/// the session. On drop, the session will automatically send an empty EOS frame
+/// to flush the encoder.
 pub struct Session {
-    encoder: Encoder,
+    pub(crate) encoder: Encoder,
 }
 
 impl Session {
+    /// Get the encoder used for this session.
+    ///
+    /// This might be useful if you want to use some of
+    /// the functions on [`Encoder`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{
+    /// #     sys::nvEncodeAPI::{NV_ENC_CODEC_H264_GUID, NV_ENC_INITIALIZE_PARAMS},
+    /// #     Encoder,
+    /// # };
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    ///
+    /// //* Set `encode_guid` and check that H.264 encoding is supported. *//
+    /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
+    /// # let encode_guids = encoder.get_encode_guids().unwrap();
+    /// # assert!(encode_guids.contains(&encode_guid));
+    ///
+    /// let session = encoder
+    ///     .initialize_encoder_session(NV_ENC_INITIALIZE_PARAMS::new(encode_guid, 1920, 1080))
+    ///     .unwrap();
+    /// // We can still use the encoder like this:
+    /// let _input_formats = session
+    ///     .get_encoder()
+    ///     .get_supported_input_formats(encode_guid);
+    /// ```
+    #[must_use]
     pub fn get_encoder(&self) -> &Encoder {
         &self.encoder
     }
@@ -383,7 +558,63 @@ impl Session {
     /// # Examples
     ///
     /// ```
-    /// // TODO
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{
+    /// #     sys::nvEncodeAPI::{
+    /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
+    /// #         NV_ENC_CODEC_H264_GUID,
+    /// #         NV_ENC_INITIALIZE_PARAMS,
+    /// #         NV_ENC_PIC_PARAMS,
+    /// #         NV_ENC_PIC_STRUCT,
+    /// #     },
+    /// #     Encoder,
+    /// # };
+    /// # const WIDTH: u32 = 1920;
+    /// # const HEIGHT: u32 = 1080;
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::cuda(cuda_device).unwrap();
+    ///
+    /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
+    /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
+    /// # let encode_guids = encoder.get_encode_guids().unwrap();
+    /// # assert!(encode_guids.contains(&encode_guid));
+    /// # let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
+    /// # let input_formats = encoder.get_supported_input_formats(encode_guid).unwrap();
+    /// # assert!(input_formats.contains(&buffer_format));
+    ///
+    /// // Begin encoder session.
+    /// let session = encoder
+    ///     .initialize_encoder_session(
+    ///         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
+    ///             .display_aspect_ratio(16, 9)
+    ///             .framerate(30, 1)
+    ///             .enable_picture_type_decision(),
+    ///     )
+    ///     .unwrap();
+    ///
+    /// // Create input and output buffers.
+    /// let mut input_buffer = session
+    ///     .create_input_buffer(WIDTH, HEIGHT, buffer_format)
+    ///     .unwrap();
+    /// let mut output_bitstream = session.create_output_bitstream().unwrap();
+    ///
+    /// // Encode frame.
+    /// input_buffer
+    ///     .lock_and_write(false, &[0; (WIDTH * HEIGHT * 4) as usize])
+    ///     .unwrap();
+    /// session
+    ///     .encode_picture(NV_ENC_PIC_PARAMS::new(
+    ///         WIDTH,
+    ///         HEIGHT,
+    ///         &mut input_buffer,
+    ///         &mut output_bitstream,
+    ///         buffer_format,
+    ///         NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
+    ///     ))
+    ///     .unwrap();
+    ///
+    /// // TODO: check that output is correct.
+    /// let _data = output_bitstream.lock_and_read().unwrap();
     /// ```
     pub fn encode_picture(
         &self,
@@ -393,10 +624,16 @@ impl Session {
     }
 }
 
-// TODO: Implement Drop for session which sends EOS
+/// Send an EOS notifications on drop to flush the encoder.
+impl Drop for Session {
+    fn drop(&mut self) {
+        self.encode_picture(NV_ENC_PIC_PARAMS::end_of_stream())
+            .expect("Should always be able to encode EOS frame");
+    }
+}
 
-// Builder pattern
 impl NV_ENC_INITIALIZE_PARAMS {
+    /// Builder for [`NV_ENC_INITIALIZE_PARAMS`].
     #[must_use]
     pub fn new(encode_guid: GUID, width: u32, height: u32) -> Self {
         NV_ENC_INITIALIZE_PARAMS {
@@ -408,18 +645,31 @@ impl NV_ENC_INITIALIZE_PARAMS {
         }
     }
 
+    /// Specifies the preset for encoding. If the preset GUID is set then
+    /// the preset configuration will be applied before any other parameter.
     #[must_use]
     pub fn preset_guid(mut self, preset_guid: GUID) -> Self {
         self.presetGUID = preset_guid;
         self
     }
 
+    /// Specifies the advanced codec specific structure. If client has sent a
+    /// valid codec config structure, it will override parameters set by the
+    /// [`NV_ENC_INITIALIZE_PARAMS::preset_guid`].
+    ///
+    /// The client can query the interface for codec-specific parameters
+    /// using [`Encoder::get_preset_config`]. It can then modify (if required)
+    /// some of the codec config parameters and send down a custom config
+    /// structure using this method. Even in this case the client is
+    /// recommended to pass the same preset GUID it has used to get the config.
     #[must_use]
     pub fn encode_config(mut self, encode_config: &mut NV_ENC_CONFIG) -> Self {
         self.encodeConfig = encode_config;
         self
     }
 
+    /// Specifies the display aspect ratio (H264/HEVC) or the render
+    /// width/height (AV1).
     #[must_use]
     pub fn display_aspect_ratio(mut self, width: u32, height: u32) -> Self {
         self.darWidth = width;
@@ -427,6 +677,8 @@ impl NV_ENC_INITIALIZE_PARAMS {
         self
     }
 
+    /// Specifies the framerate in frames per second as a fraction
+    /// `numerator / denominator`.
     #[must_use]
     pub fn framerate(mut self, numerator: u32, denominator: u32) -> Self {
         self.frameRateNum = numerator;
@@ -434,6 +686,8 @@ impl NV_ENC_INITIALIZE_PARAMS {
         self
     }
 
+    /// Enable the Picture Type Decision to be taken by the
+    /// `NvEncodeAPI` interface.
     #[must_use]
     pub fn enable_picture_type_decision(mut self) -> Self {
         self.enablePTD = 1;
@@ -443,8 +697,8 @@ impl NV_ENC_INITIALIZE_PARAMS {
     // TODO: Add other options
 }
 
-// Builder pattern
 impl NV_ENC_PIC_PARAMS {
+    /// Builder for [`NV_ENC_PIC_PARAMS`].
     #[must_use]
     pub fn new<INPUT: EncoderInput, OUTPUT: EncoderOutput>(
         width: u32,
@@ -468,6 +722,8 @@ impl NV_ENC_PIC_PARAMS {
         }
     }
 
+    /// Create an EOS empty frame that is used at the
+    /// end of encoding to flush the encoder.
     #[must_use]
     pub fn end_of_stream() -> Self {
         NV_ENC_PIC_PARAMS {
@@ -477,18 +733,21 @@ impl NV_ENC_PIC_PARAMS {
         }
     }
 
+    /// Specifies the input buffer pitch.
     #[must_use]
     pub fn pitch(mut self, pitch: u32) -> Self {
         self.inputPitch = pitch;
         self
     }
 
+    /// Specifies the frame index associated with the input frame.
     #[must_use]
     pub fn frame_id(mut self, frame_id: u32) -> Self {
         self.frameIdx = frame_id;
         self
     }
 
+    /// Specifies the codec specific per-picture encoding parameters.
     #[must_use]
     pub fn codec_pic_params(mut self, codec_pic_params: NV_ENC_CODEC_PIC_PARAMS) -> Self {
         self.codecPicParams = codec_pic_params;
