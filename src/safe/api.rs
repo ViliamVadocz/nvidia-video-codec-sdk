@@ -5,7 +5,8 @@ use crate::sys::nvEncodeAPI::{
     NvEncodeAPICreateInstance,
     NvEncodeAPIGetMaxSupportedVersion,
     GUID,
-    NVENCAPI_VERSION,
+    NVENCAPI_MAJOR_VERSION,
+    NVENCAPI_MINOR_VERSION,
     NVENCSTATUS,
     NV_ENCODE_API_FUNCTION_LIST,
     NV_ENCODE_API_FUNCTION_LIST_VER,
@@ -123,7 +124,7 @@ type GetSequenceParamEx = unsafe extern "C" fn(
 /// An instance of the `NvEncodeAPI` interface, containing function pointers
 /// which should be used to interface with the rest of the Encoder API.
 #[allow(dead_code)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct EncodeAPI {
     /// NvEncOpenEncodeSession
     pub(crate) open_encode_session: OpenEncodeSession,
@@ -207,6 +208,15 @@ pub(crate) struct EncodeAPI {
     pub(crate) set_io_cuda_streams: SetIOCudaStreams,
 }
 
+fn assert_versions_match(max_supported_version: u32) {
+    let major_version = max_supported_version >> 4;
+    let minor_version = max_supported_version & 0b1111;
+    assert!(
+        (major_version, minor_version) >= (NVENCAPI_MAJOR_VERSION, NVENCAPI_MINOR_VERSION),
+        "The maximum supported version should be greater or equal than the header version."
+    );
+}
+
 impl EncodeAPI {
     fn new() -> Self {
         const MSG: &str = "The API instance should populate the whole function list";
@@ -217,11 +227,7 @@ impl EncodeAPI {
         unsafe { NvEncodeAPIGetMaxSupportedVersion(version.as_mut_ptr()) }
             .result()
             .expect("The pointer to the version should be valid.");
-        assert_eq!(
-            unsafe { version.assume_init() },
-            NVENCAPI_VERSION,
-            "Max supported version and the header version should match."
-        );
+        assert_versions_match(unsafe { version.assume_init() });
 
         // Create empty function buffer.
         let mut function_list = NV_ENCODE_API_FUNCTION_LIST {

@@ -36,6 +36,9 @@ const LIBRARY_CANDIDATES: [&str; 10] = [
 ];
 
 fn main() {
+    if cfg!(feature = "ci-check") {
+        return;
+    }
     rerun_if_changed();
     let cuda_root = find_cuda_root()
         .canonicalize()
