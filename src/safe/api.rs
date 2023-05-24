@@ -1,5 +1,4 @@
 use core::ffi::{c_int, c_void};
-use std::mem::MaybeUninit;
 
 use crate::sys::nvEncodeAPI::{
     NvEncodeAPICreateInstance,
@@ -223,11 +222,11 @@ impl EncodeAPI {
 
         // Check that the driver max supported version matches the version
         // from the header files. If they do not match, the bindings should be updated.
-        let mut version = MaybeUninit::uninit();
-        unsafe { NvEncodeAPIGetMaxSupportedVersion(version.as_mut_ptr()) }
+        let mut version = 0;
+        unsafe { NvEncodeAPIGetMaxSupportedVersion(&mut version) }
             .result()
             .expect("The pointer to the version should be valid.");
-        assert_versions_match(unsafe { version.assume_init() });
+        assert_versions_match(version);
 
         // Create empty function buffer.
         let mut function_list = NV_ENCODE_API_FUNCTION_LIST {
