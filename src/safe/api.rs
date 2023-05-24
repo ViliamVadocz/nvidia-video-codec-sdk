@@ -126,85 +126,85 @@ type GetSequenceParamEx = unsafe extern "C" fn(
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct EncodeAPI {
-    /// NvEncOpenEncodeSession
+    #[doc(alias = "NvEncOpenEncodeSession")]
     pub open_encode_session: OpenEncodeSession,
-    /// NvEncOpenEncodeSessionEx
+    #[doc(alias = "NvEncOpenEncodeSessionEx")]
     pub open_encode_session_ex: OpenEncodeSessionEx,
-    /// NvEncInitializeEncoder
+    #[doc(alias = "NvEncInitializeEncoder")]
     pub initialize_encoder: InitializeEncoder,
-    /// NvEncReconfigureEncoder
+    #[doc(alias = "NvEncReconfigureEncoder")]
     pub reconfigure_encoder: ReconfigureEncoder,
-    /// NvEncDestroyEncoder
+    #[doc(alias = "NvEncDestroyEncoder")]
     pub destroy_encoder: DestroyEncoder,
-    /// NvEncGetEncodeGuidCount
+    #[doc(alias = "NvEncGetEncodeGuidCount")]
     pub get_encode_guid_count: GetEncodeGUIDCount,
-    /// NvEncGetEncodeGUIDs
+    #[doc(alias = "NvEncGetEncodeGUIDs")]
     pub get_encode_guids: GetEncodeGUIDs,
-    /// NvEncGetEncodeProfileGuidCount
+    #[doc(alias = "NvEncGetEncodeProfileGuidCount")]
     pub get_encode_profile_guid_count: GetEncodeProfileGUIDCount,
-    /// NvEncGetEncodeProfileGUIDs
+    #[doc(alias = "NvEncGetEncodeProfileGUIDs")]
     pub get_encode_profile_guids: GetEncodeProfileGUIDs,
-    /// NvEncGetInputFormatCount
+    #[doc(alias = "NvEncGetInputFormatCount")]
     pub get_input_format_count: GetInputFormatCount,
-    /// NvEncGetInputFormats
+    #[doc(alias = "NvEncGetInputFormats")]
     pub get_input_formats: GetInputFormats,
-    /// NvEncGetEncodePresetCount
+    #[doc(alias = "NvEncGetEncodePresetCount")]
     pub get_encode_preset_count: GetEncodePresetCount,
-    /// NvEncGetEncodePresetGUIDs
+    #[doc(alias = "NvEncGetEncodePresetGUIDs")]
     pub get_encode_preset_guids: GetEncodePresetGUIDs,
-    /// NvEncGetEncodePresetConfig
+    #[doc(alias = "NvEncGetEncodePresetConfig")]
     pub get_encode_preset_config: GetEncodePresetConfig,
-    /// NvEncGetEncodePresetConfigEx
+    #[doc(alias = "NvEncGetEncodePresetConfigEx")]
     pub get_encode_preset_config_ex: GetEncodePresetConfigEx,
-    /// NvEncGetEncodeCaps
+    #[doc(alias = "NvEncGetEncodeCaps")]
     pub get_encode_caps: GetEncodeCaps,
-    /// NvEncCreateInputBuffer
+    #[doc(alias = "NvEncCreateInputBuffer")]
     pub create_input_buffer: CreateInputBuffer,
-    /// NvEncDestroyInputBuffer
+    #[doc(alias = "NvEncDestroyInputBuffer")]
     pub destroy_input_buffer: DestroyInputBuffer,
-    /// NvLockInputBuffer
+    #[doc(alias = "NvLockInputBuffer")]
     pub lock_input_buffer: LockInputBuffer,
-    /// NvUnlockInputBuffer
+    #[doc(alias = "NvUnlockInputBuffer")]
     pub unlock_input_buffer: UnlockInputBuffer,
-    /// NvEncCreateBitstreamBuffer
+    #[doc(alias = "NvEncCreateBitstreamBuffer")]
     pub create_bitstream_buffer: CreateBitstreamBuffer,
-    /// NvEncDestroyBitstreamBuffer
+    #[doc(alias = "NvEncDestroyBitstreamBuffer")]
     pub destroy_bitstream_buffer: DestroyBitstreamBuffer,
-    /// NvEncLockBitstream
+    #[doc(alias = "NvEncLockBitstream")]
     pub lock_bitstream: LockBitstream,
-    /// NvEncUnlockBitstream
+    #[doc(alias = "NvEncUnlockBitstream")]
     pub unlock_bitstream: UnlockBitstream,
-    /// NvEncMapInputResource
+    #[doc(alias = "NvEncMapInputResource")]
     pub map_input_resource: MapInputResource,
-    /// NvEncUnmapInputResource
+    #[doc(alias = "NvEncUnmapInputResource")]
     pub unmap_input_resource: UnmapInputResource,
-    /// NvEncRegisterResource
+    #[doc(alias = "NvEncRegisterResource")]
     pub register_resource: RegisterResource,
-    /// NvEncUnregisterResource
+    #[doc(alias = "NvEncUnregisterResource")]
     pub unregister_resource: UnregisterResource,
-    /// NvEncCreateMVBuffer
+    #[doc(alias = "NvEncCreateMVBuffer")]
     pub create_mv_buffer: CreateMVBuffer,
-    /// NvEncDestroyMVBuffer
+    #[doc(alias = "NvEncDestroyMVBuffer")]
     pub destroy_mv_buffer: DestroyMVBuffer,
-    /// NvEncEncodePicture
+    #[doc(alias = "NvEncEncodePicture")]
     pub encode_picture: EncodePicture,
-    /// NvEncGetEncodeStats
+    #[doc(alias = "NvEncGetEncodeStats")]
     pub get_encode_stats: GetEncodeStats,
-    /// NvEncGetSequenceParams
+    #[doc(alias = "NvEncGetSequenceParams")]
     pub get_sequence_params: GetSequenceParams,
-    /// NvEncGetSequenceParamEx
+    #[doc(alias = "NvEncGetSequenceParamEx")]
     pub get_sequence_param_ex: GetSequenceParamEx,
-    /// NvEncRegisterAsyncEvent
+    #[doc(alias = "NvEncRegisterAsyncEvent")]
     pub register_async_event: RegisterAsyncEvent,
-    /// NvEncUnregisterAsyncEvent
+    #[doc(alias = "NvEncUnregisterAsyncEvent")]
     pub unregister_async_event: UnregisterAsyncEvent,
-    /// NvEncInvalidateRefFrames
+    #[doc(alias = "NvEncInvalidateRefFrames")]
     pub invalidate_ref_frames: InvalidateRefFrames,
-    /// NvEncRunMotionEstimationOnly
+    #[doc(alias = "NvEncRunMotionEstimationOnly")]
     pub run_motion_estimation_only: RunMotionEstimationOnly,
-    /// NvEncGetLastErrorString
+    #[doc(alias = "NvEncGetLastErrorString")]
     pub get_last_error_string: GetLastErrorString,
-    /// NvEncSetIOCudaStreams
+    #[doc(alias = "NvEncSetIOCudaStreams")]
     pub set_io_cuda_streams: SetIOCudaStreams,
 }
 
