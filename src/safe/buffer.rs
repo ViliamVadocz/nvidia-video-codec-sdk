@@ -37,16 +37,7 @@ pub trait EncoderOutput {
     fn handle(&mut self) -> *mut c_void;
 }
 
-/// Abstraction around input buffer allocated using
-/// the NVIDIA Video Encoder API.
-///
-/// The buffer is automatically destroyed when dropped.
-#[derive(Debug)]
-pub struct Buffer<'a> {
-    pub(crate) ptr: *mut c_void,
-    encoder: &'a Encoder,
-}
-
+/// Functions for creating input and output buffers.
 impl Session {
     /// Create a [`Buffer`].
     ///
@@ -123,6 +114,197 @@ impl Session {
             encoder: &self.encoder,
         })
     }
+
+    /// Create a [`Bitstream`].
+    ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#creating-resources-required-to-hold-inputoutput-data).
+    ///
+    /// # Errors
+    ///
+    /// Could error is we run out of memory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{
+    /// #     sys::nvEncodeAPI::{
+    /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
+    /// #         NV_ENC_CODEC_H264_GUID,
+    /// #         NV_ENC_INITIALIZE_PARAMS,
+    /// #         NV_ENC_PIC_PARAMS,
+    /// #         NV_ENC_PIC_STRUCT,
+    /// #     },
+    /// #     Encoder,
+    /// # };
+    /// # const WIDTH: u32 = 1920;
+    /// # const HEIGHT: u32 = 1080;
+    /// //* Create encoder. *//
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// # let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
+    ///
+    /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
+    /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
+    /// # let encode_guids = encoder.get_encode_guids().unwrap();
+    /// # assert!(encode_guids.contains(&encode_guid));
+    /// # let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
+    /// # let input_formats = encoder.get_supported_input_formats(encode_guid).unwrap();
+    /// # assert!(input_formats.contains(&buffer_format));
+    ///
+    /// //* Begin encoder session. *//
+    /// # let session = encoder
+    /// #     .initialize_encoder_session(
+    /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
+    /// #             .display_aspect_ratio(16, 9)
+    /// #             .framerate(30, 1)
+    /// #             .enable_picture_type_decision(),
+    /// #     )
+    /// #     .unwrap();
+    ///
+    /// // Create an output bitstream buffer.
+    /// let _output_bitstream = session
+    ///     .create_output_bitstream()
+    ///     .unwrap();
+    /// ```
+    pub fn create_output_bitstream(&self) -> Result<Bitstream, EncodeError> {
+        let mut create_bitstream_buffer_params = NV_ENC_CREATE_BITSTREAM_BUFFER {
+            version: NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
+            bitstreamBuffer: ptr::null_mut(),
+            ..Default::default()
+        };
+        unsafe {
+            (ENCODE_API.create_bitstream_buffer)(
+                self.encoder.ptr,
+                &mut create_bitstream_buffer_params,
+            )
+        }
+        .result()?;
+        Ok(Bitstream {
+            ptr: create_bitstream_buffer_params.bitstreamBuffer,
+            encoder: &self.encoder,
+        })
+    }
+
+    /// Create a [`MappedResource`].
+    ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#input-buffers-allocated-externally).
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `register_resource_params.bufferUsage` is not
+    /// [`NV_ENC_BUFFER_USAGE::NV_ENC_INPUT_IMAGE`].
+    ///
+    /// # Errors
+    ///
+    /// Could error if registration or mapping fails,
+    /// if the resource is invalid, or if we run out of memory.
+    ///
+    /// ```
+    /// # use std::ffi::c_void;
+    /// # use cudarc::driver::{CudaDevice, DevicePtr, CudaSlice};
+    /// # use nvidia_video_codec_sdk::{
+    /// #     sys::nvEncodeAPI::{
+    /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
+    /// #         NV_ENC_CODEC_H264_GUID,
+    /// #         NV_ENC_INITIALIZE_PARAMS,
+    /// #         NV_ENC_INPUT_RESOURCE_TYPE,
+    /// #         NV_ENC_PIC_PARAMS,
+    /// #         NV_ENC_PIC_STRUCT,
+    /// #         NV_ENC_REGISTER_RESOURCE,
+    /// #     },
+    /// #     Encoder,
+    /// # };
+    /// # const WIDTH: u32 = 1920;
+    /// # const HEIGHT: u32 = 1080;
+    /// # const DATA_LEN: usize = (WIDTH * HEIGHT * 4) as usize;
+    /// //* Create encoder. *//
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// # let encoder = Encoder::initialize_with_cuda(cuda_device.clone()).unwrap();
+    ///
+    /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
+    /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
+    /// # let encode_guids = encoder.get_encode_guids().unwrap();
+    /// # assert!(encode_guids.contains(&encode_guid));
+    /// # let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
+    /// # let input_formats = encoder.get_supported_input_formats(encode_guid).unwrap();
+    /// # assert!(input_formats.contains(&buffer_format));
+    ///
+    /// //* Begin encoder session. *//
+    /// # let session = encoder
+    /// #     .initialize_encoder_session(
+    /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
+    /// #             .display_aspect_ratio(16, 9)
+    /// #             .framerate(30, 1)
+    /// #             .enable_picture_type_decision(),
+    /// #     )
+    /// #     .unwrap();
+    ///
+    /// // Allocate memory with CUDA.
+    /// let cuda_slice = cuda_device.alloc_zeros::<u8>(DATA_LEN).unwrap();
+    ///
+    /// // FIXME: Fails for unknown reason.
+    /// // Register and map the resource.
+    /// let (_mapped_resource, buf_fmt) = session.register_and_map_input_resource(
+    ///     NV_ENC_REGISTER_RESOURCE::new(
+    ///         NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
+    ///         WIDTH,
+    ///         HEIGHT,
+    ///         *cuda_slice.device_ptr() as *mut c_void,
+    ///         buffer_format,
+    ///     )
+    ///     .pitch(WIDTH * 4), // ARGB format has 4 bytes per pixel.
+    /// ).unwrap();
+    /// assert_eq!(buffer_format, buf_fmt);
+    /// ```
+    pub fn register_and_map_input_resource(
+        &self,
+        mut register_resource_params: NV_ENC_REGISTER_RESOURCE,
+    ) -> Result<(MappedResource, NV_ENC_BUFFER_FORMAT), EncodeError> {
+        // Currently it looks like only input is supported.
+        assert_eq!(
+            register_resource_params.bufferUsage,
+            NV_ENC_BUFFER_USAGE::NV_ENC_INPUT_IMAGE
+        );
+
+        // Register resource.
+        unsafe { (ENCODE_API.register_resource)(self.encoder.ptr, &mut register_resource_params) }
+            .result()?;
+        let registered_resource = register_resource_params.registeredResource;
+
+        // Map resource.
+        let mut map_input_resource_params = NV_ENC_MAP_INPUT_RESOURCE {
+            version: NV_ENC_MAP_INPUT_RESOURCE_VER,
+            registeredResource: registered_resource,
+            mappedResource: ptr::null_mut(),
+            mappedBufferFmt: NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_UNDEFINED,
+            ..Default::default()
+        };
+        unsafe {
+            (ENCODE_API.map_input_resource)(self.encoder.ptr, &mut map_input_resource_params)
+        }
+        .result()?;
+
+        let mapped_resource = map_input_resource_params.mappedResource;
+        let input_buffer_format = map_input_resource_params.mappedBufferFmt;
+        Ok((
+            MappedResource {
+                reg_ptr: registered_resource,
+                map_ptr: mapped_resource,
+                encoder: &self.encoder,
+            },
+            input_buffer_format,
+        ))
+    }
+}
+
+/// Abstraction around input buffer allocated using
+/// the NVIDIA Video Encoder API.
+///
+/// The buffer is automatically destroyed when dropped.
+#[derive(Debug)]
+pub struct Buffer<'a> {
+    pub(crate) ptr: *mut c_void,
+    encoder: &'a Encoder,
 }
 
 impl<'a> Buffer<'a> {
@@ -341,78 +523,6 @@ pub struct Bitstream<'a> {
     encoder: &'a Encoder,
 }
 
-impl Session {
-    /// Create a [`Bitstream`].
-    ///
-    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#creating-resources-required-to-hold-inputoutput-data).
-    ///
-    /// # Errors
-    ///
-    /// Could error is we run out of memory.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use cudarc::driver::CudaDevice;
-    /// # use nvidia_video_codec_sdk::{
-    /// #     sys::nvEncodeAPI::{
-    /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
-    /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_INITIALIZE_PARAMS,
-    /// #         NV_ENC_PIC_PARAMS,
-    /// #         NV_ENC_PIC_STRUCT,
-    /// #     },
-    /// #     Encoder,
-    /// # };
-    /// # const WIDTH: u32 = 1920;
-    /// # const HEIGHT: u32 = 1080;
-    /// //* Create encoder. *//
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// # let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
-    ///
-    /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
-    /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
-    /// # let encode_guids = encoder.get_encode_guids().unwrap();
-    /// # assert!(encode_guids.contains(&encode_guid));
-    /// # let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
-    /// # let input_formats = encoder.get_supported_input_formats(encode_guid).unwrap();
-    /// # assert!(input_formats.contains(&buffer_format));
-    ///
-    /// //* Begin encoder session. *//
-    /// # let session = encoder
-    /// #     .initialize_encoder_session(
-    /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
-    /// #             .display_aspect_ratio(16, 9)
-    /// #             .framerate(30, 1)
-    /// #             .enable_picture_type_decision(),
-    /// #     )
-    /// #     .unwrap();
-    ///
-    /// // Create an output bitstream buffer.
-    /// let _output_bitstream = session
-    ///     .create_output_bitstream()
-    ///     .unwrap();
-    /// ```
-    pub fn create_output_bitstream(&self) -> Result<Bitstream, EncodeError> {
-        let mut create_bitstream_buffer_params = NV_ENC_CREATE_BITSTREAM_BUFFER {
-            version: NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
-            bitstreamBuffer: ptr::null_mut(),
-            ..Default::default()
-        };
-        unsafe {
-            (ENCODE_API.create_bitstream_buffer)(
-                self.encoder.ptr,
-                &mut create_bitstream_buffer_params,
-            )
-        }
-        .result()?;
-        Ok(Bitstream {
-            ptr: create_bitstream_buffer_params.bitstreamBuffer,
-            encoder: &self.encoder,
-        })
-    }
-}
-
 // TODO: There is a lot of extra data and statistics that we get when we lock
 // the bitstream. Maybe expose that somehow? Consider an API similar to `Buffer`
 // and `Lock`.
@@ -480,119 +590,6 @@ pub struct MappedResource<'a> {
     pub(crate) reg_ptr: *mut c_void,
     pub(crate) map_ptr: *mut c_void,
     encoder: &'a Encoder,
-}
-
-impl Session {
-    /// Create a [`MappedResource`].
-    ///
-    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#input-buffers-allocated-externally).
-    ///
-    /// # Panics
-    ///
-    /// Panics if the `register_resource_params.bufferUsage` is not
-    /// [`NV_ENC_BUFFER_USAGE::NV_ENC_INPUT_IMAGE`].
-    ///
-    /// # Errors
-    ///
-    /// Could error if registration or mapping fails,
-    /// if the resource is invalid, or if we run out of memory.
-    ///
-    /// ```
-    /// # use std::ffi::c_void;
-    /// # use cudarc::driver::{CudaDevice, DevicePtr, CudaSlice};
-    /// # use nvidia_video_codec_sdk::{
-    /// #     sys::nvEncodeAPI::{
-    /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
-    /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_INITIALIZE_PARAMS,
-    /// #         NV_ENC_INPUT_RESOURCE_TYPE,
-    /// #         NV_ENC_PIC_PARAMS,
-    /// #         NV_ENC_PIC_STRUCT,
-    /// #         NV_ENC_REGISTER_RESOURCE,
-    /// #     },
-    /// #     Encoder,
-    /// # };
-    /// # const WIDTH: u32 = 1920;
-    /// # const HEIGHT: u32 = 1080;
-    /// # const DATA_LEN: usize = (WIDTH * HEIGHT * 4) as usize;
-    /// //* Create encoder. *//
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// # let encoder = Encoder::initialize_with_cuda(cuda_device.clone()).unwrap();
-    ///
-    /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
-    /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
-    /// # let encode_guids = encoder.get_encode_guids().unwrap();
-    /// # assert!(encode_guids.contains(&encode_guid));
-    /// # let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
-    /// # let input_formats = encoder.get_supported_input_formats(encode_guid).unwrap();
-    /// # assert!(input_formats.contains(&buffer_format));
-    ///
-    /// //* Begin encoder session. *//
-    /// # let session = encoder
-    /// #     .initialize_encoder_session(
-    /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
-    /// #             .display_aspect_ratio(16, 9)
-    /// #             .framerate(30, 1)
-    /// #             .enable_picture_type_decision(),
-    /// #     )
-    /// #     .unwrap();
-    ///
-    /// // Allocate memory with CUDA.
-    /// let cuda_slice = cuda_device.alloc_zeros::<u8>(DATA_LEN).unwrap();
-    ///
-    /// // FIXME: Fails for unknown reason.
-    /// // Register and map the resource.
-    /// let (_mapped_resource, buf_fmt) = session.register_and_map_input_resource(
-    ///     NV_ENC_REGISTER_RESOURCE::new(
-    ///         NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
-    ///         WIDTH,
-    ///         HEIGHT,
-    ///         *cuda_slice.device_ptr() as *mut c_void,
-    ///         buffer_format,
-    ///     )
-    ///     .pitch(WIDTH * 4), // ARGB format has 4 bytes per pixel.
-    /// ).unwrap();
-    /// assert_eq!(buffer_format, buf_fmt);
-    /// ```
-    pub fn register_and_map_input_resource(
-        &self,
-        mut register_resource_params: NV_ENC_REGISTER_RESOURCE,
-    ) -> Result<(MappedResource, NV_ENC_BUFFER_FORMAT), EncodeError> {
-        // Currently it looks like only input is supported.
-        assert_eq!(
-            register_resource_params.bufferUsage,
-            NV_ENC_BUFFER_USAGE::NV_ENC_INPUT_IMAGE
-        );
-
-        // Register resource.
-        unsafe { (ENCODE_API.register_resource)(self.encoder.ptr, &mut register_resource_params) }
-            .result()?;
-        let registered_resource = register_resource_params.registeredResource;
-
-        // Map resource.
-        let mut map_input_resource_params = NV_ENC_MAP_INPUT_RESOURCE {
-            version: NV_ENC_MAP_INPUT_RESOURCE_VER,
-            registeredResource: registered_resource,
-            mappedResource: ptr::null_mut(),
-            mappedBufferFmt: NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_UNDEFINED,
-            ..Default::default()
-        };
-        unsafe {
-            (ENCODE_API.map_input_resource)(self.encoder.ptr, &mut map_input_resource_params)
-        }
-        .result()?;
-
-        let mapped_resource = map_input_resource_params.mappedResource;
-        let input_buffer_format = map_input_resource_params.mappedBufferFmt;
-        Ok((
-            MappedResource {
-                reg_ptr: registered_resource,
-                map_ptr: mapped_resource,
-                encoder: &self.encoder,
-            },
-            input_buffer_format,
-        ))
-    }
 }
 
 impl NV_ENC_REGISTER_RESOURCE {
