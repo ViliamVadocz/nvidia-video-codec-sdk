@@ -501,10 +501,11 @@ impl Encoder {
     }
 }
 
-/// An encoding session. You need to call
-/// [`Encoder::initialize_encoder_session`] before you can encode frames using
-/// the session. On drop, the session will automatically send an empty EOS frame
-/// to flush the encoder.
+/// An encoding session to create input/output buffers and encode frames.
+///
+/// You need to call [`Encoder::initialize_encoder_session`] before you can
+/// encode frames using the session. On drop, the session will automatically
+/// send an empty EOS frame to flush the encoder.
 #[derive(Debug)]
 pub struct Session {
     pub(crate) encoder: Encoder,

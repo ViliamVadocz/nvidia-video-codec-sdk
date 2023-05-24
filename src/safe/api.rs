@@ -39,7 +39,7 @@ lazy_static! {
     /// A lazy static for the Encoder API.
     ///
     /// You should not interact with this directly.
-    /// [`Encoder`] exposes much of the functionality and provides a nicer API.
+    /// [`Encoder`](crate::Encoder) exposes much of the functionality and provides a nicer API.
     pub static ref ENCODE_API: EncodeAPI =
         EncodeAPI::new();
 }
@@ -123,7 +123,7 @@ type GetSequenceParamEx = unsafe extern "C" fn(
 
 /// An instance of the `NvEncodeAPI` interface, containing function pointers
 /// which should be used to interface with the rest of the Encoder API.
-#[allow(dead_code)]
+#[allow(dead_code, missing_docs)]
 #[derive(Debug, Clone)]
 pub struct EncodeAPI {
     #[doc(alias = "NvEncOpenEncodeSession")]
