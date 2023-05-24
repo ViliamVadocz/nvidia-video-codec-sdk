@@ -1,8 +1,4 @@
-use std::{
-    ffi::{c_void, CStr},
-    ptr,
-    sync::Arc,
-};
+use std::{ffi::c_void, ptr, sync::Arc};
 
 use cudarc::driver::CudaDevice;
 
@@ -11,25 +7,28 @@ use super::{
     buffer::{EncoderInput, EncoderOutput},
     result::EncodeError,
 };
-use crate::sys::nvEncodeAPI::{
-    GUID,
-    NVENCAPI_VERSION,
-    NV_ENC_BUFFER_FORMAT,
-    NV_ENC_CODEC_PIC_PARAMS,
-    NV_ENC_CONFIG,
-    NV_ENC_CONFIG_VER,
-    NV_ENC_DEVICE_TYPE,
-    NV_ENC_INITIALIZE_PARAMS,
-    NV_ENC_INITIALIZE_PARAMS_VER,
-    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
-    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
-    NV_ENC_PIC_FLAGS,
-    NV_ENC_PIC_PARAMS,
-    NV_ENC_PIC_PARAMS_VER,
-    NV_ENC_PIC_STRUCT,
-    NV_ENC_PRESET_CONFIG,
-    NV_ENC_PRESET_CONFIG_VER,
-    NV_ENC_TUNING_INFO,
+use crate::{
+    result::ErrorKind,
+    sys::nvEncodeAPI::{
+        GUID,
+        NVENCAPI_VERSION,
+        NV_ENC_BUFFER_FORMAT,
+        NV_ENC_CODEC_PIC_PARAMS,
+        NV_ENC_CONFIG,
+        NV_ENC_CONFIG_VER,
+        NV_ENC_DEVICE_TYPE,
+        NV_ENC_INITIALIZE_PARAMS,
+        NV_ENC_INITIALIZE_PARAMS_VER,
+        NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
+        NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
+        NV_ENC_PIC_FLAGS,
+        NV_ENC_PIC_PARAMS,
+        NV_ENC_PIC_PARAMS_VER,
+        NV_ENC_PIC_STRUCT,
+        NV_ENC_PRESET_CONFIG,
+        NV_ENC_PRESET_CONFIG_VER,
+        NV_ENC_TUNING_INFO,
+    },
 };
 
 type Device = Arc<CudaDevice>;
@@ -62,15 +61,19 @@ pub struct Encoder {
 }
 
 /// The client must flush the encoder before freeing any resources.
-/// Do this by sending an EOS encode picture packet
-/// (This is done automatically when [`Session`] is dropped).
+/// Do this by sending an EOS encode frame.
+/// (This is also done automatically when [`Session`] is dropped.).
+///
+/// Sending an EOS frame might still generate data, so if you care
+/// about this you should send an EOS frame yourself.
+///
 /// The client must free all the input and output resources before
 /// destroying the encoder.
 /// If using events, they must also be unregistered.
 impl Drop for Encoder {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.destroy_encoder)(self.ptr) }
-            .result()
+            .result(self)
             .expect("The encoder pointer should be valid.");
     }
 }
@@ -106,10 +109,10 @@ impl Encoder {
 
         if let err @ Err(_) =
             unsafe { (ENCODE_API.open_encode_session_ex)(&mut session_params, &mut encoder) }
-                .result()
+                .result_without_string()
         {
             // We are required to destroy the encoder if there was an error.
-            unsafe { (ENCODE_API.destroy_encoder)(encoder) }.result()?;
+            unsafe { (ENCODE_API.destroy_encoder)(encoder) }.result_without_string()?;
             err?;
         };
 
@@ -122,32 +125,6 @@ impl Encoder {
     // TODO:
     // - Make Encoder generic in Device.
     // - Add functions to create Encoder from other encode devices.
-
-    /// Get the description of the last error reported by the API.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use cudarc::driver::CudaDevice;
-    /// # use nvidia_video_codec_sdk::{sys::nvEncodeAPI::GUID, EncodeError, Encoder};
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
-    /// // Cause an error by passing in an invalid GUID.
-    /// assert_eq!(
-    ///     encoder.get_supported_input_formats(GUID::default()),
-    ///     Err(EncodeError::InvalidParam)
-    /// );
-    /// // Get the error message.
-    /// // Unfortunately, it's not always helpful.
-    /// assert_eq!(
-    ///     encoder.get_last_error_string().to_string_lossy(),
-    ///     "EncodeAPI Internal Error."
-    /// );
-    /// ```
-    #[must_use]
-    pub fn get_last_error_string(&self) -> &CStr {
-        unsafe { CStr::from_ptr((ENCODE_API.get_last_error_string)(self.ptr)) }
-    }
 
     /// Get the encode GUIDs which the encoder supports.
     ///
@@ -175,7 +152,8 @@ impl Encoder {
     pub fn get_encode_guids(&self) -> Result<Vec<GUID>, EncodeError> {
         // Query number of supported encoder codec GUIDs.
         let mut supported_count = 0;
-        unsafe { (ENCODE_API.get_encode_guid_count)(self.ptr, &mut supported_count) }.result()?;
+        unsafe { (ENCODE_API.get_encode_guid_count)(self.ptr, &mut supported_count) }
+            .result(self)?;
         // Get the supported GUIDs.
         let mut encode_guids = vec![GUID::default(); supported_count as usize];
         let mut actual_count = 0;
@@ -187,7 +165,7 @@ impl Encoder {
                 &mut actual_count,
             )
         }
-        .result()?;
+        .result(self)?;
         encode_guids.truncate(actual_count as usize);
         Ok(encode_guids)
     }
@@ -228,7 +206,7 @@ impl Encoder {
         // Query the number of preset GUIDS.
         let mut preset_count = 0;
         unsafe { (ENCODE_API.get_encode_preset_count)(self.ptr, encode_guid, &mut preset_count) }
-            .result()?;
+            .result(self)?;
         // Get the preset GUIDs.
         let mut actual_count = 0;
         let mut preset_guids = vec![GUID::default(); preset_count as usize];
@@ -241,7 +219,7 @@ impl Encoder {
                 &mut actual_count,
             )
         }
-        .result()?;
+        .result(self)?;
         preset_guids.truncate(actual_count as usize);
         Ok(preset_guids)
     }
@@ -284,7 +262,7 @@ impl Encoder {
         unsafe {
             (ENCODE_API.get_encode_profile_guid_count)(self.ptr, encode_guid, &mut profile_count)
         }
-        .result()?;
+        .result(self)?;
         // Get the profile GUIDs.
         let mut profile_guids = vec![GUID::default(); profile_count as usize];
         let mut actual_count = 0;
@@ -297,7 +275,7 @@ impl Encoder {
                 &mut actual_count,
             )
         }
-        .result()?;
+        .result(self)?;
         profile_guids.truncate(actual_count as usize);
         Ok(profile_guids)
     }
@@ -343,7 +321,7 @@ impl Encoder {
         // Query the number of supported input formats.
         let mut format_count = 0;
         unsafe { (ENCODE_API.get_input_format_count)(self.ptr, encode_guid, &mut format_count) }
-            .result()?;
+            .result(self)?;
         // Get the supported input formats.
         let mut supported_input_formats =
             vec![NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_UNDEFINED; format_count as usize];
@@ -357,7 +335,7 @@ impl Encoder {
                 &mut actual_count,
             )
         }
-        .result()?;
+        .result(self)?;
         supported_input_formats.truncate(actual_count as usize);
         Ok(supported_input_formats)
     }
@@ -433,7 +411,7 @@ impl Encoder {
                 &mut preset_config,
             )
         }
-        .result()?;
+        .result(self)?;
         Ok(preset_config)
     }
 
@@ -482,7 +460,8 @@ impl Encoder {
         self,
         mut initialize_params: NV_ENC_INITIALIZE_PARAMS,
     ) -> Result<Session, EncodeError> {
-        unsafe { (ENCODE_API.initialize_encoder)(self.ptr, &mut initialize_params) }.result()?;
+        unsafe { (ENCODE_API.initialize_encoder)(self.ptr, &mut initialize_params) }
+            .result(&self)?;
         Ok(Session { encoder: self })
     }
 }
@@ -614,16 +593,18 @@ impl Session {
         &self,
         mut encode_pic_params: NV_ENC_PIC_PARAMS,
     ) -> Result<(), EncodeError> {
-        unsafe { (ENCODE_API.encode_picture)(self.encoder.ptr, &mut encode_pic_params) }.result()
+        unsafe { (ENCODE_API.encode_picture)(self.encoder.ptr, &mut encode_pic_params) }
+            .result(&self.encoder)
     }
 }
 
 /// Send an EOS notifications on drop to flush the encoder.
 impl Drop for Session {
     fn drop(&mut self) {
-        while let Err(EncodeError::EncoderBusy) =
-            self.encode_picture(NV_ENC_PIC_PARAMS::end_of_stream())
-        {}
+        while matches!(
+            self.encode_picture(NV_ENC_PIC_PARAMS::end_of_stream()),
+            Err(err) if err.kind() == ErrorKind::EncoderBusy
+        ) {}
     }
 }
 

@@ -224,7 +224,7 @@ impl EncodeAPI {
         // from the header files. If they do not match, the bindings should be updated.
         let mut version = 0;
         unsafe { NvEncodeAPIGetMaxSupportedVersion(&mut version) }
-            .result()
+            .result_without_string()
             .expect("The pointer to the version should be valid.");
         assert_versions_match(version);
 
@@ -235,7 +235,7 @@ impl EncodeAPI {
         };
         // Create Encode API Instance (populate function buffer).
         unsafe { NvEncodeAPICreateInstance(&mut function_list) }
-            .result()
+            .result_without_string()
             .expect("The pointer to the function list should be valid.");
 
         Self {

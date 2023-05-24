@@ -108,7 +108,7 @@ impl Session {
         unsafe {
             (ENCODE_API.create_input_buffer)(self.encoder.ptr, &mut create_input_buffer_params)
         }
-        .result()?;
+        .result(&self.encoder)?;
         Ok(Buffer {
             ptr: create_input_buffer_params.inputBuffer,
             encoder: &self.encoder,
@@ -178,7 +178,7 @@ impl Session {
                 &mut create_bitstream_buffer_params,
             )
         }
-        .result()?;
+        .result(&self.encoder)?;
         Ok(Bitstream {
             ptr: create_bitstream_buffer_params.bitstreamBuffer,
             encoder: &self.encoder,
@@ -268,7 +268,7 @@ impl Session {
 
         // Register resource.
         unsafe { (ENCODE_API.register_resource)(self.encoder.ptr, &mut register_resource_params) }
-            .result()?;
+            .result(&self.encoder)?;
         let registered_resource = register_resource_params.registeredResource;
 
         // Map resource.
@@ -282,7 +282,7 @@ impl Session {
         unsafe {
             (ENCODE_API.map_input_resource)(self.encoder.ptr, &mut map_input_resource_params)
         }
-        .result()?;
+        .result(&self.encoder)?;
 
         let mapped_resource = map_input_resource_params.mappedResource;
         let input_buffer_format = map_input_resource_params.mappedBufferFmt;
@@ -446,7 +446,7 @@ impl<'a> Buffer<'a> {
             lock_input_buffer_params.set_doNotWait(1);
         }
         unsafe { (ENCODE_API.lock_input_buffer)(self.encoder.ptr, &mut lock_input_buffer_params) }
-            .result()?;
+            .result(self.encoder)?;
 
         let data_ptr = lock_input_buffer_params.bufferDataPtr;
         let pitch = lock_input_buffer_params.pitch;
@@ -462,7 +462,7 @@ impl<'a> Buffer<'a> {
 impl Drop for Buffer<'_> {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.destroy_input_buffer)(self.encoder.ptr, self.ptr) }
-            .result()
+            .result(self.encoder)
             .expect("The encoder and buffer pointers should be valid.");
     }
 }
@@ -508,7 +508,7 @@ impl Lock<'_, '_> {
 impl Drop for Lock<'_, '_> {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.unlock_input_buffer)(self.buffer.encoder.ptr, self.buffer.ptr) }
-            .result()
+            .result(self.buffer.encoder)
             .expect("The encoder and buffer pointers should be valid.");
     }
 }
@@ -550,7 +550,7 @@ impl<'a> Bitstream<'a> {
             lock_bitstream_buffer_params.set_doNotWait(1);
         }
         unsafe { (ENCODE_API.lock_bitstream)(self.encoder.ptr, &mut lock_bitstream_buffer_params) }
-            .result()?;
+            .result(self.encoder)?;
 
         // Get data.
         let data_ptr = lock_bitstream_buffer_params.bitstreamBufferPtr;
@@ -558,7 +558,8 @@ impl<'a> Bitstream<'a> {
         let data = unsafe { std::slice::from_raw_parts_mut(data_ptr.cast::<u8>(), data_size) };
 
         // Unlock bitstream.
-        unsafe { (ENCODE_API.unlock_bitstream)(self.encoder.ptr, self.ptr) }.result()?;
+        unsafe { (ENCODE_API.unlock_bitstream)(self.encoder.ptr, self.ptr) }
+            .result(self.encoder)?;
 
         Ok(data)
     }
@@ -567,7 +568,7 @@ impl<'a> Bitstream<'a> {
 impl Drop for Bitstream<'_> {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.destroy_bitstream_buffer)(self.encoder.ptr, self.ptr) }
-            .result()
+            .result(self.encoder)
             .expect("The encoder and bitstream pointers should be valid.");
     }
 }
@@ -664,11 +665,11 @@ impl Drop for MappedResource<'_> {
     fn drop(&mut self) {
         // Unmapping resource.
         unsafe { (ENCODE_API.unmap_input_resource)(self.encoder.ptr, self.map_ptr) }
-            .result()
+            .result(self.encoder)
             .expect("The encoder pointer and map handle should be valid.");
         // Unregister resource.
         unsafe { (ENCODE_API.unregister_resource)(self.encoder.ptr, self.reg_ptr) }
-            .result()
+            .result(self.encoder)
             .expect("The encoder pointer and resource handle should be valid.");
     }
 }

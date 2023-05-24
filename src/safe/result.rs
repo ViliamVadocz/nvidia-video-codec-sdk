@@ -1,10 +1,10 @@
-use std::{error::Error, fmt};
+use std::{error::Error, ffi::CStr, fmt};
 
-use crate::sys::nvEncodeAPI::NVENCSTATUS;
+use crate::{sys::nvEncodeAPI::NVENCSTATUS, Encoder, ENCODE_API};
 
 /// Wrapper enum around [`NVENCSTATUS`].
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum EncodeError {
+pub enum ErrorKind {
     /// No encode capable devices were detected.
     NoEncodeDevice = 1,
     /// The device passed by the client is not supported.
@@ -91,45 +91,72 @@ pub enum EncodeError {
     ResourceNotMapped = 25,
 }
 
+/// Wrapper struct around [`NVENCSTATUS`].
+///
+/// This struct also contains a string with additional info
+/// when it is relevant and available.
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct EncodeError {
+    kind: ErrorKind,
+    string: Option<String>,
+}
+
+impl EncodeError {
+    /// Getter for the error kind.
+    #[must_use]
+    pub fn kind(&self) -> ErrorKind {
+        self.kind
+    }
+
+    /// Getter for the error string.
+    #[must_use]
+    pub fn string(&self) -> Option<&str> {
+        self.string.as_deref()
+    }
+}
+
 impl fmt::Display for EncodeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{self:?}")
+        match &self.string {
+            Some(s) => write!(f, "{:?}: {s}", self.kind),
+            None => write!(f, "{:?}", self.kind),
+        }
     }
 }
 
 impl Error for EncodeError {}
 
-impl From<NVENCSTATUS> for EncodeError {
+impl From<NVENCSTATUS> for ErrorKind {
     fn from(status: NVENCSTATUS) -> Self {
         match status {
             NVENCSTATUS::NV_ENC_SUCCESS => {
                 unreachable!("Success should not be converted to an error.")
             }
-            NVENCSTATUS::NV_ENC_ERR_NO_ENCODE_DEVICE => EncodeError::NoEncodeDevice,
-            NVENCSTATUS::NV_ENC_ERR_UNSUPPORTED_DEVICE => EncodeError::UnsupportedDevice,
-            NVENCSTATUS::NV_ENC_ERR_INVALID_ENCODERDEVICE => EncodeError::InvalidEncoderDevice,
-            NVENCSTATUS::NV_ENC_ERR_INVALID_DEVICE => EncodeError::InvalidDevice,
-            NVENCSTATUS::NV_ENC_ERR_DEVICE_NOT_EXIST => EncodeError::DeviceNotExist,
-            NVENCSTATUS::NV_ENC_ERR_INVALID_PTR => EncodeError::InvalidPtr,
-            NVENCSTATUS::NV_ENC_ERR_INVALID_EVENT => EncodeError::InvalidEvent,
-            NVENCSTATUS::NV_ENC_ERR_INVALID_PARAM => EncodeError::InvalidParam,
-            NVENCSTATUS::NV_ENC_ERR_INVALID_CALL => EncodeError::InvalidCall,
-            NVENCSTATUS::NV_ENC_ERR_OUT_OF_MEMORY => EncodeError::OutOfMemory,
-            NVENCSTATUS::NV_ENC_ERR_ENCODER_NOT_INITIALIZED => EncodeError::EncoderNotInitialized,
-            NVENCSTATUS::NV_ENC_ERR_UNSUPPORTED_PARAM => EncodeError::UnsupportedParam,
-            NVENCSTATUS::NV_ENC_ERR_LOCK_BUSY => EncodeError::LockBusy,
-            NVENCSTATUS::NV_ENC_ERR_NOT_ENOUGH_BUFFER => EncodeError::NotEnoughBuffer,
-            NVENCSTATUS::NV_ENC_ERR_INVALID_VERSION => EncodeError::InvalidVersion,
-            NVENCSTATUS::NV_ENC_ERR_MAP_FAILED => EncodeError::MapFailed,
-            NVENCSTATUS::NV_ENC_ERR_NEED_MORE_INPUT => EncodeError::NeedMoreInput,
-            NVENCSTATUS::NV_ENC_ERR_ENCODER_BUSY => EncodeError::EncoderBusy,
-            NVENCSTATUS::NV_ENC_ERR_EVENT_NOT_REGISTERD => EncodeError::EventNotRegistered,
-            NVENCSTATUS::NV_ENC_ERR_GENERIC => EncodeError::Generic,
-            NVENCSTATUS::NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY => EncodeError::IncompatibleClientKey,
-            NVENCSTATUS::NV_ENC_ERR_UNIMPLEMENTED => EncodeError::Unimplemented,
-            NVENCSTATUS::NV_ENC_ERR_RESOURCE_REGISTER_FAILED => EncodeError::ResourceRegisterFailed,
-            NVENCSTATUS::NV_ENC_ERR_RESOURCE_NOT_REGISTERED => EncodeError::ResourceNotRegistered,
-            NVENCSTATUS::NV_ENC_ERR_RESOURCE_NOT_MAPPED => EncodeError::ResourceNotMapped,
+            NVENCSTATUS::NV_ENC_ERR_NO_ENCODE_DEVICE => ErrorKind::NoEncodeDevice,
+            NVENCSTATUS::NV_ENC_ERR_UNSUPPORTED_DEVICE => ErrorKind::UnsupportedDevice,
+            NVENCSTATUS::NV_ENC_ERR_INVALID_ENCODERDEVICE => ErrorKind::InvalidEncoderDevice,
+            NVENCSTATUS::NV_ENC_ERR_INVALID_DEVICE => ErrorKind::InvalidDevice,
+            NVENCSTATUS::NV_ENC_ERR_DEVICE_NOT_EXIST => ErrorKind::DeviceNotExist,
+            NVENCSTATUS::NV_ENC_ERR_INVALID_PTR => ErrorKind::InvalidPtr,
+            NVENCSTATUS::NV_ENC_ERR_INVALID_EVENT => ErrorKind::InvalidEvent,
+            NVENCSTATUS::NV_ENC_ERR_INVALID_PARAM => ErrorKind::InvalidParam,
+            NVENCSTATUS::NV_ENC_ERR_INVALID_CALL => ErrorKind::InvalidCall,
+            NVENCSTATUS::NV_ENC_ERR_OUT_OF_MEMORY => ErrorKind::OutOfMemory,
+            NVENCSTATUS::NV_ENC_ERR_ENCODER_NOT_INITIALIZED => ErrorKind::EncoderNotInitialized,
+            NVENCSTATUS::NV_ENC_ERR_UNSUPPORTED_PARAM => ErrorKind::UnsupportedParam,
+            NVENCSTATUS::NV_ENC_ERR_LOCK_BUSY => ErrorKind::LockBusy,
+            NVENCSTATUS::NV_ENC_ERR_NOT_ENOUGH_BUFFER => ErrorKind::NotEnoughBuffer,
+            NVENCSTATUS::NV_ENC_ERR_INVALID_VERSION => ErrorKind::InvalidVersion,
+            NVENCSTATUS::NV_ENC_ERR_MAP_FAILED => ErrorKind::MapFailed,
+            NVENCSTATUS::NV_ENC_ERR_NEED_MORE_INPUT => ErrorKind::NeedMoreInput,
+            NVENCSTATUS::NV_ENC_ERR_ENCODER_BUSY => ErrorKind::EncoderBusy,
+            NVENCSTATUS::NV_ENC_ERR_EVENT_NOT_REGISTERD => ErrorKind::EventNotRegistered,
+            NVENCSTATUS::NV_ENC_ERR_GENERIC => ErrorKind::Generic,
+            NVENCSTATUS::NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY => ErrorKind::IncompatibleClientKey,
+            NVENCSTATUS::NV_ENC_ERR_UNIMPLEMENTED => ErrorKind::Unimplemented,
+            NVENCSTATUS::NV_ENC_ERR_RESOURCE_REGISTER_FAILED => ErrorKind::ResourceRegisterFailed,
+            NVENCSTATUS::NV_ENC_ERR_RESOURCE_NOT_REGISTERED => ErrorKind::ResourceNotRegistered,
+            NVENCSTATUS::NV_ENC_ERR_RESOURCE_NOT_MAPPED => ErrorKind::ResourceNotMapped,
         }
     }
 }
@@ -139,16 +166,74 @@ impl NVENCSTATUS {
     ///
     /// [`NVENCSTATUS::NV_ENC_SUCCESS`] is converted to `Ok(())`,
     /// and all other variants are mapped to the corresponding variant
-    /// in [`EncodeError`].
+    /// in [`ErrorKind`]. The error type is [`EncodeError`] which has
+    /// a kind and an optional `String` which might contain additional
+    /// information about the error.
     ///
     /// # Errors
     ///
     /// Returns an error whenever the status is not
     /// [`NVENCSTATUS::NV_ENC_SUCCESS`].
-    pub fn result(self) -> Result<(), EncodeError> {
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use cudarc::driver::CudaDevice;
+    /// # use nvidia_video_codec_sdk::{sys::nvEncodeAPI::GUID, EncodeError, Encoder};
+    /// # let cuda_device = CudaDevice::new(0).unwrap();
+    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
+    /// // Cause an error by passing in an invalid GUID.
+    /// // `Encoder::get_supported_input_formats()` uses `.result()` internally
+    /// let error = encoder
+    ///     .get_supported_input_formats(GUID::default())
+    ///     .unwrap_err();
+    /// // Get the kind.
+    /// assert_eq!(error.kind(), ErrorKind::InvalidParam);
+    /// // Get the error message.
+    /// // Unfortunately, it's not always helpful.
+    /// assert_eq!(error.string(), "EncodeAPI Internal Error.");
+    /// ```
+    pub fn result(self, encoder: &Encoder) -> Result<(), EncodeError> {
+        self.result_without_string().map_err(|mut err| {
+            err.string = match err.kind {
+                // Avoid getting the string if it is not needed.
+                ErrorKind::LockBusy
+                | ErrorKind::EncoderBusy
+                | ErrorKind::NeedMoreInput
+                | ErrorKind::OutOfMemory => None,
+                // Otherwise allocate an owned `String` with the error.
+                _ => Some(
+                    unsafe { CStr::from_ptr((ENCODE_API.get_last_error_string)(encoder.ptr)) }
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+            }
+            .and_then(|s| if s.is_empty() { None } else { Some(s) });
+            err
+        })
+    }
+
+    /// Convert an [`NVENCSTATUS`] to a [`Result`] without
+    /// using an [`Encoder`].
+    ///
+    /// This function is the same as [`NVENCSTATUS::result`] except
+    /// it does not get the error string because it does not have access
+    /// to an [`Encoder`]. This is only useful if you do not have an [`Encoder`]
+    /// yet, for example when initializing the API.
+    ///
+    /// You should always prefer to use [`NVENCSTATUS::result`] when possible.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error whenever the status is not
+    /// [`NVENCSTATUS::NV_ENC_SUCCESS`].
+    pub fn result_without_string(self) -> Result<(), EncodeError> {
         match self {
             NVENCSTATUS::NV_ENC_SUCCESS => Ok(()),
-            err => Err(err.into()),
+            err => Err(EncodeError {
+                kind: err.into(),
+                string: None,
+            }),
         }
     }
 }
