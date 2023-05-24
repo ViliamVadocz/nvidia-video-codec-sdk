@@ -78,7 +78,7 @@ impl Session {
     ///
     /// //* Begin encoder session. *//
     /// # let session = encoder
-    /// #     .initialize_encoder_session(
+    /// #     .start_session(
     /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
     /// #             .display_aspect_ratio(16, 9)
     /// #             .framerate(30, 1)
@@ -153,7 +153,7 @@ impl Session {
     ///
     /// //* Begin encoder session. *//
     /// # let session = encoder
-    /// #     .initialize_encoder_session(
+    /// #     .start_session(
     /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
     /// #             .display_aspect_ratio(16, 9)
     /// #             .framerate(30, 1)
@@ -231,7 +231,7 @@ impl Session {
     ///
     /// //* Begin encoder session. *//
     /// # let session = encoder
-    /// #     .initialize_encoder_session(
+    /// #     .start_session(
     /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
     /// #             .display_aspect_ratio(16, 9)
     /// #             .framerate(30, 1)
@@ -351,7 +351,7 @@ impl<'a> Buffer<'a> {
     /// # assert!(input_formats.contains(&buffer_format));
     /// //* Begin encoder session. *//
     /// # let session = encoder
-    /// #     .initialize_encoder_session(
+    /// #     .start_session(
     /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
     /// #             .display_aspect_ratio(16, 9)
     /// #             .framerate(30, 1)
@@ -412,7 +412,7 @@ impl<'a> Buffer<'a> {
     /// # assert!(input_formats.contains(&buffer_format));
     /// //* Begin encoder session. *//
     /// # let session = encoder
-    /// #     .initialize_encoder_session(
+    /// #     .start_session(
     /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
     /// #             .display_aspect_ratio(16, 9)
     /// #             .framerate(30, 1)

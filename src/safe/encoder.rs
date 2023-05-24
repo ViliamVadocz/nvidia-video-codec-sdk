@@ -49,7 +49,7 @@ type Device = Arc<CudaDevice>;
 /// [`Encoder::get_supported_input_formats`].
 ///
 /// Once the configuration is completed, a session should be initialized with
-/// [`Encoder::initialize_encoder_session`] to get a [`Session`].
+/// [`Encoder::start_session`] to get a [`Session`].
 /// This type has further function to create input and output buffers
 /// and encode pictures.
 ///
@@ -485,14 +485,14 @@ impl Encoder {
     ///
     /// // Initialize the encoder session.
     /// let _session = encoder
-    ///     .initialize_encoder_session(NV_ENC_INITIALIZE_PARAMS::new(
+    ///     .start_session(NV_ENC_INITIALIZE_PARAMS::new(
     ///         NV_ENC_CODEC_H264_GUID,
     ///         1920,
     ///         1080,
     ///     ))
     ///     .unwrap();
     /// ```
-    pub fn initialize_encoder_session(
+    pub fn start_session(
         self,
         mut initialize_params: NV_ENC_INITIALIZE_PARAMS,
     ) -> Result<Session, EncodeError> {
@@ -503,7 +503,7 @@ impl Encoder {
 
 /// An encoding session to create input/output buffers and encode frames.
 ///
-/// You need to call [`Encoder::initialize_encoder_session`] before you can
+/// You need to call [`Encoder::start_session`] before you can
 /// encode frames using the session. On drop, the session will automatically
 /// send an empty EOS frame to flush the encoder.
 #[derive(Debug)]
@@ -535,7 +535,7 @@ impl Session {
     /// # assert!(encode_guids.contains(&encode_guid));
     ///
     /// let session = encoder
-    ///     .initialize_encoder_session(NV_ENC_INITIALIZE_PARAMS::new(encode_guid, 1920, 1080))
+    ///     .start_session(NV_ENC_INITIALIZE_PARAMS::new(encode_guid, 1920, 1080))
     ///     .unwrap();
     /// // We can still use the encoder like this:
     /// let _input_formats = session
@@ -595,7 +595,7 @@ impl Session {
     ///
     /// // Begin encoder session.
     /// let session = encoder
-    ///     .initialize_encoder_session(
+    ///     .start_session(
     ///         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
     ///             .display_aspect_ratio(16, 9)
     ///             .framerate(30, 1)

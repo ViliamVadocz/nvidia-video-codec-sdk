@@ -188,7 +188,7 @@ fn main() {
     // Initialize a new encoder session based on the `preset_config`
     // we generated before.
     let session = encoder
-        .initialize_encoder_session(
+        .start_session(
             NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
                 .display_aspect_ratio(16, 9)
                 .framerate(30, 1)
