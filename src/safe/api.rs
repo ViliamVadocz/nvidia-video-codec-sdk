@@ -1,3 +1,5 @@
+//! Defines `ENCODE_API`, which is a lazy static of [`EncodeAPI`].
+
 use core::ffi::{c_int, c_void};
 
 use crate::sys::nvEncodeAPI::{
