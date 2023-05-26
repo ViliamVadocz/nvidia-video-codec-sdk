@@ -1,3 +1,9 @@
+//! The [`Encoder`] is the main entrypoint for the Encoder API.
+//!
+//! The [`Encoder`] provides a slightly higher-level abstraction over the
+//! encoder API. This module also defines builders for some of the parameter
+//! structs used by the interface.
+
 use std::{ffi::c_void, ptr, sync::Arc};
 
 use cudarc::driver::CudaDevice;

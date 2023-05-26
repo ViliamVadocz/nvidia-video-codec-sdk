@@ -1,3 +1,7 @@
+//! Defines a wrapper around
+//! [`NVENCSTATUS`](crate::sys::nvEncodeAPI::NVENCSTATUS) to provide ergonomic
+//! error handling.
+
 use std::{error::Error, ffi::CStr, fmt};
 
 use super::{api::ENCODE_API, encoder::Encoder};

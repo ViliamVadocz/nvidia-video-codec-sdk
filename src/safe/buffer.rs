@@ -1,3 +1,5 @@
+//! Defines traits and types for dealing with input and output buffers.
+
 use std::{ffi::c_void, ptr};
 
 use cudarc::driver::{DevicePtr, MappedBuffer};
