@@ -1,10 +1,8 @@
 use std::{ffi::c_void, ptr};
 
-use super::{
-    api::ENCODE_API,
-    encoder::{Encoder, Session},
-    result::EncodeError,
-};
+use cudarc::driver::{DevicePtr, MappedBuffer};
+
+use super::{api::ENCODE_API, encoder::Encoder, result::EncodeError, session::Session};
 use crate::sys::nvEncodeAPI::{
     NV_ENC_BUFFER_FORMAT,
     NV_ENC_BUFFER_USAGE,
@@ -91,17 +89,12 @@ impl Session {
     ///     .create_input_buffer(WIDTH, HEIGHT, buffer_format)
     ///     .unwrap();
     /// ```
-    pub fn create_input_buffer(
-        &self,
-        width: u32,
-        height: u32,
-        buffer_format: NV_ENC_BUFFER_FORMAT,
-    ) -> Result<Buffer, EncodeError> {
+    pub fn create_input_buffer(&self) -> Result<Buffer, EncodeError> {
         let mut create_input_buffer_params = NV_ENC_CREATE_INPUT_BUFFER {
             version: NV_ENC_CREATE_INPUT_BUFFER_VER,
-            width,
-            height,
-            bufferFmt: buffer_format,
+            width: self.width,
+            height: self.height,
+            bufferFmt: self.buffer_format,
             inputBuffer: ptr::null_mut(),
             ..Default::default()
         };
@@ -185,7 +178,25 @@ impl Session {
         })
     }
 
-    /// Create a [`MappedResource`].
+    pub fn register_cuda_resource<'a>(
+        &self,
+        mapped_buffer: MappedBuffer<'a>,
+    ) -> Result<RegisteredResource<MappedBuffer<'a>>, EncodeError> {
+        let device_ptr = *mapped_buffer.device_ptr();
+        self.register_generic_resource(
+            mapped_buffer,
+            NV_ENC_REGISTER_RESOURCE::new(
+                NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
+                self.width,
+                self.height,
+                device_ptr as *mut c_void,
+                self.buffer_format,
+            )
+            .pitch(self.width * 4), // FIXME: Assumes ARGB buffer format
+        )
+    }
+
+    /// Create a [`RegisteredResource`].
     ///
     /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#input-buffers-allocated-externally).
     ///
@@ -256,10 +267,11 @@ impl Session {
     /// ).unwrap();
     /// assert_eq!(buffer_format, buf_fmt);
     /// ```
-    pub fn register_and_map_input_resource(
+    pub fn register_generic_resource<T>(
         &self,
+        marker: T,
         mut register_resource_params: NV_ENC_REGISTER_RESOURCE,
-    ) -> Result<(MappedResource, NV_ENC_BUFFER_FORMAT), EncodeError> {
+    ) -> Result<RegisteredResource<T>, EncodeError> {
         // Currently it looks like only input is supported.
         assert_eq!(
             register_resource_params.bufferUsage,
@@ -285,15 +297,12 @@ impl Session {
         .result(&self.encoder)?;
 
         let mapped_resource = map_input_resource_params.mappedResource;
-        let input_buffer_format = map_input_resource_params.mappedBufferFmt;
-        Ok((
-            MappedResource {
-                reg_ptr: registered_resource,
-                map_ptr: mapped_resource,
-                encoder: &self.encoder,
-            },
-            input_buffer_format,
-        ))
+        Ok(RegisteredResource {
+            reg_ptr: registered_resource,
+            map_ptr: mapped_resource,
+            encoder: &self.encoder,
+            _marker: marker,
+        })
     }
 }
 
@@ -587,10 +596,13 @@ impl EncoderOutput for Bitstream<'_> {
 /// The buffer is automatically unmapped and unregistered when dropped.
 /// The external buffer memory should still be properly destroyed by the client.
 #[derive(Debug)]
-pub struct MappedResource<'a> {
+pub struct RegisteredResource<'a, T> {
     pub(crate) reg_ptr: *mut c_void,
     pub(crate) map_ptr: *mut c_void,
     encoder: &'a Encoder,
+    // A generic marker to make sure the external resources are dropped
+    // after the resource is unregistered.
+    _marker: T,
 }
 
 impl NV_ENC_REGISTER_RESOURCE {
@@ -661,7 +673,7 @@ impl NV_ENC_REGISTER_RESOURCE {
 
 /// Automatically unmap and unregister the external resource
 /// when it goes out of scope.
-impl Drop for MappedResource<'_> {
+impl<T> Drop for RegisteredResource<'_, T> {
     fn drop(&mut self) {
         // Unmapping resource.
         unsafe { (ENCODE_API.unmap_input_resource)(self.encoder.ptr, self.map_ptr) }
@@ -674,7 +686,7 @@ impl Drop for MappedResource<'_> {
     }
 }
 
-impl EncoderInput for MappedResource<'_> {
+impl<T> EncoderInput for RegisteredResource<'_, T> {
     fn handle(&mut self) -> *mut c_void {
         self.map_ptr
     }
