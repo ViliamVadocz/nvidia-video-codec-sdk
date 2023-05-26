@@ -242,8 +242,10 @@ fn main() {
         let mut external_memory = unsafe {
             cuda_device.import_external_memory(file_descriptor, (WIDTH * HEIGHT * 4) as u64)
         }
-        .unwrap();
-        let mapped_buffer = external_memory.map_all().unwrap();
+        .expect("File descriptor should be valid for importing.");
+        let mapped_buffer = external_memory
+            .map_all()
+            .expect("External memory should be mappable.");
 
         // Register and map with NVENC.
         let (mut input_buffer, buf_fmt) = session
