@@ -13,7 +13,10 @@ pub mod encoder;
 /// error handling.
 pub mod result;
 
-pub use api::{EncodeAPI, ENCODE_API};
-pub use buffer::{Bitstream, Buffer, EncoderInput, EncoderOutput, MappedResource};
-pub use encoder::Encoder;
-pub use result::EncodeError;
+pub mod session;
+
+// pub use api::{EncodeAPI, ENCODE_API};
+// pub use buffer::{Bitstream, Buffer, EncoderInput, EncoderOutput,
+// RegisteredResource}; pub use encoder::Encoder;
+// pub use result::EncodeError;
+// pub use session::Session;

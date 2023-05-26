@@ -1,6 +1,7 @@
 use std::{error::Error, ffi::CStr, fmt};
 
-use crate::{sys::nvEncodeAPI::NVENCSTATUS, Encoder, ENCODE_API};
+use super::{api::ENCODE_API, encoder::Encoder};
+use crate::sys::nvEncodeAPI::NVENCSTATUS;
 
 /// Wrapper enum around [`NVENCSTATUS`].
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
