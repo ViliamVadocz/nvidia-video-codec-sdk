@@ -199,7 +199,7 @@ impl Encoder {
     /// # assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
     ///
     /// let preset_guids = encoder.get_preset_guids(NV_ENC_CODEC_H264_GUID).unwrap();
-    /// // Confirm that H.264 support the P1 preset (high performance, low quality) on this machine.
+    /// // Confirm that H.264 supports the P1 preset (high performance, low quality) on this machine.
     /// assert!(preset_guids.contains(&NV_ENC_PRESET_P1_GUID));
     /// ```
     pub fn get_preset_guids(&self, encode_guid: GUID) -> Result<Vec<GUID>, EncodeError> {
