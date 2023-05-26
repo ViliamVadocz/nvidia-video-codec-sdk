@@ -1,29 +1,18 @@
 use std::{ffi::c_void, ptr, sync::Arc};
 
-use cudarc::driver::{result::init, CudaDevice};
+use cudarc::driver::CudaDevice;
 
-use super::{
-    api::ENCODE_API,
-    buffer::{EncoderInput, EncoderOutput},
-    result::EncodeError,
-    session::Session,
-};
+use super::{api::ENCODE_API, result::EncodeError, session::Session};
 use crate::sys::nvEncodeAPI::{
     GUID,
     NVENCAPI_VERSION,
     NV_ENC_BUFFER_FORMAT,
-    NV_ENC_CODEC_PIC_PARAMS,
     NV_ENC_CONFIG,
     NV_ENC_CONFIG_VER,
     NV_ENC_DEVICE_TYPE,
     NV_ENC_INITIALIZE_PARAMS,
-    NV_ENC_INITIALIZE_PARAMS_VER,
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
-    NV_ENC_PIC_FLAGS,
-    NV_ENC_PIC_PARAMS,
-    NV_ENC_PIC_PARAMS_VER,
-    NV_ENC_PIC_STRUCT,
     NV_ENC_PRESET_CONFIG,
     NV_ENC_PRESET_CONFIG_VER,
     NV_ENC_TUNING_INFO,
@@ -470,139 +459,4 @@ impl Encoder {
             buffer_format,
         })
     }
-}
-
-impl NV_ENC_INITIALIZE_PARAMS {
-    /// Builder for [`NV_ENC_INITIALIZE_PARAMS`].
-    #[must_use]
-    pub fn new(encode_guid: GUID, width: u32, height: u32) -> Self {
-        NV_ENC_INITIALIZE_PARAMS {
-            version: NV_ENC_INITIALIZE_PARAMS_VER,
-            encodeGUID: encode_guid,
-            encodeWidth: width,
-            encodeHeight: height,
-            ..Default::default()
-        }
-    }
-
-    /// Specifies the preset for encoding. If the preset GUID is set then
-    /// the preset configuration will be applied before any other parameter.
-    #[must_use]
-    pub fn preset_guid(mut self, preset_guid: GUID) -> Self {
-        self.presetGUID = preset_guid;
-        self
-    }
-
-    /// Specifies the advanced codec specific structure. If client has sent a
-    /// valid codec config structure, it will override parameters set by the
-    /// [`NV_ENC_INITIALIZE_PARAMS::preset_guid`].
-    ///
-    /// The client can query the interface for codec-specific parameters
-    /// using [`Encoder::get_preset_config`]. It can then modify (if required)
-    /// some of the codec config parameters and send down a custom config
-    /// structure using this method. Even in this case the client is
-    /// recommended to pass the same preset GUID it has used to get the config.
-    #[must_use]
-    pub fn encode_config(mut self, encode_config: &mut NV_ENC_CONFIG) -> Self {
-        self.encodeConfig = encode_config;
-        self
-    }
-
-    /// Specifies the display aspect ratio (H264/HEVC) or the render
-    /// width/height (AV1).
-    #[must_use]
-    pub fn display_aspect_ratio(mut self, width: u32, height: u32) -> Self {
-        self.darWidth = width;
-        self.darHeight = height;
-        self
-    }
-
-    /// Specifies the framerate in frames per second as a fraction
-    /// `numerator / denominator`.
-    #[must_use]
-    pub fn framerate(mut self, numerator: u32, denominator: u32) -> Self {
-        self.frameRateNum = numerator;
-        self.frameRateDen = denominator;
-        self
-    }
-
-    /// Enable the Picture Type Decision to be taken by the
-    /// `NvEncodeAPI` interface.
-    #[must_use]
-    pub fn enable_picture_type_decision(mut self) -> Self {
-        self.enablePTD = 1;
-        self
-    }
-
-    // TODO: Add other options
-}
-
-impl NV_ENC_PIC_PARAMS {
-    /// Builder for [`NV_ENC_PIC_PARAMS`].
-    ///
-    /// # Arguments
-    ///
-    /// * `width` - Input frame width.
-    /// * `height` - Input frame height.
-    /// * `input_buffer` - Input buffer which implements [`EncoderInput`].
-    /// * `output_bitstream` - Output bitstream buffer which implements
-    ///   [`EncoderOutput`].
-    /// * `buffer_format` - Input buffer format.
-    /// * `picture_struct` - The structure of the input picture.
-    #[must_use]
-    pub fn new<INPUT: EncoderInput, OUTPUT: EncoderOutput>(
-        width: u32,
-        height: u32,
-        input_buffer: &mut INPUT,
-        output_bitstream: &mut OUTPUT,
-        buffer_format: NV_ENC_BUFFER_FORMAT,
-        picture_struct: NV_ENC_PIC_STRUCT,
-    ) -> Self {
-        NV_ENC_PIC_PARAMS {
-            version: NV_ENC_PIC_PARAMS_VER,
-            inputWidth: width,
-            inputHeight: height,
-            inputPitch: width,
-            // TODO: Which flag should be used when?
-            inputBuffer: input_buffer.handle(),
-            outputBitstream: output_bitstream.handle(),
-            bufferFmt: buffer_format,
-            pictureStruct: picture_struct,
-            ..Default::default()
-        }
-    }
-
-    /// Create an EOS empty frame that is used at the
-    /// end of encoding to flush the encoder.
-    #[must_use]
-    pub fn end_of_stream() -> Self {
-        NV_ENC_PIC_PARAMS {
-            version: NV_ENC_PIC_PARAMS_VER,
-            encodePicFlags: NV_ENC_PIC_FLAGS::NV_ENC_PIC_FLAG_EOS as u32,
-            ..Default::default()
-        }
-    }
-
-    /// Specifies the input buffer pitch.
-    #[must_use]
-    pub fn pitch(mut self, pitch: u32) -> Self {
-        self.inputPitch = pitch;
-        self
-    }
-
-    /// Specifies the frame index associated with the input frame.
-    #[must_use]
-    pub fn frame_id(mut self, frame_id: u32) -> Self {
-        self.frameIdx = frame_id;
-        self
-    }
-
-    /// Specifies the codec specific per-picture encoding parameters.
-    #[must_use]
-    pub fn codec_pic_params(mut self, codec_pic_params: NV_ENC_CODEC_PIC_PARAMS) -> Self {
-        self.codecPicParams = codec_pic_params;
-        self
-    }
-
-    // TODO: Add other options
 }
