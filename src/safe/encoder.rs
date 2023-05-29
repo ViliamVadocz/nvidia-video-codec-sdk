@@ -427,6 +427,7 @@ impl Encoder {
     /// # use cudarc::driver::CudaDevice;
     /// # use nvidia_video_codec_sdk::{
     /// #     sys::nvEncodeAPI::{
+    /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
     /// #         NV_ENC_CODEC_H264_GUID,
     /// #         NV_ENC_INITIALIZE_PARAMS,
     /// #         NV_ENC_PRESET_LOW_LATENCY_HP_GUID,
@@ -442,11 +443,10 @@ impl Encoder {
     ///
     /// // Initialize the encoder session.
     /// let _session = encoder
-    ///     .start_session(NV_ENC_INITIALIZE_PARAMS::new(
-    ///         NV_ENC_CODEC_H264_GUID,
-    ///         1920,
-    ///         1080,
-    ///     ))
+    ///     .start_session(
+    ///         NV_ENC_BUFFER_FORMAT_ARGB,
+    ///         NV_ENC_INITIALIZE_PARAMS::new(NV_ENC_CODEC_H264_GUID, 1920, 1080),
+    ///     )
     ///     .unwrap();
     /// ```
     pub fn start_session(

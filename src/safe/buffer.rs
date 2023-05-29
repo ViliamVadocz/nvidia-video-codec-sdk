@@ -25,6 +25,9 @@ use crate::sys::nvEncodeAPI::{
 /// If a type implements this trait it means it is a valid input buffer
 /// for the encoding API.
 pub trait EncoderInput {
+    /// Get the pitch (AKA stride) of the input resource.
+    fn pitch(&self) -> u32;
+
     /// Get the handle of the input resource.
     fn handle(&mut self) -> *mut c_void;
 }
@@ -78,6 +81,7 @@ impl Session {
     /// //* Begin encoder session. *//
     /// # let session = encoder
     /// #     .start_session(
+    /// #         buffer_format,
     /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
     /// #             .display_aspect_ratio(16, 9)
     /// #             .framerate(30, 1)
@@ -87,7 +91,7 @@ impl Session {
     ///
     /// // Create an input buffer.
     /// let _input_buffer = session
-    ///     .create_input_buffer(WIDTH, HEIGHT, buffer_format)
+    ///     .create_input_buffer()
     ///     .unwrap();
     /// ```
     pub fn create_input_buffer(&self) -> Result<Buffer, EncodeError> {
@@ -105,6 +109,7 @@ impl Session {
         .result(&self.encoder)?;
         Ok(Buffer {
             ptr: create_input_buffer_params.inputBuffer,
+            pitch: self.width,
             encoder: &self.encoder,
         })
     }
@@ -148,6 +153,7 @@ impl Session {
     /// //* Begin encoder session. *//
     /// # let session = encoder
     /// #     .start_session(
+    /// #         buffer_format,
     /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
     /// #             .display_aspect_ratio(16, 9)
     /// #             .framerate(30, 1)
@@ -183,12 +189,17 @@ impl Session {
     ///
     /// See [`Session::register_generic_resource`].
     ///
+    /// `pitch` should be set to the value obtained from `cuMemAllocPitch()`,
+    /// or to the width in **bytes** (if this resource was created by using
+    /// `cuMemAlloc()`). This value must be a multiple of 4.
+    ///
     /// # Errors
     ///
     /// Could error if registration or mapping fails,
     /// if the resource is invalid, or if we run out of memory.
     pub fn register_cuda_resource<'a>(
         &self,
+        pitch: u32,
         mapped_buffer: MappedBuffer<'a>,
     ) -> Result<RegisteredResource<MappedBuffer<'a>>, EncodeError> {
         let device_ptr = *mapped_buffer.device_ptr();
@@ -196,7 +207,7 @@ impl Session {
             mapped_buffer,
             NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
             device_ptr as *mut c_void,
-            self.width * 4, // FIXME: Assumes buffer format with 4 bytes per pixel (e.g. ARGB)
+            pitch,
         )
     }
 
@@ -214,64 +225,6 @@ impl Session {
     ///
     /// Could error if registration or mapping fails,
     /// if the resource is invalid, or if we run out of memory.
-    ///
-    /// ```
-    /// # use std::ffi::c_void;
-    /// # use cudarc::driver::{CudaDevice, DevicePtr, CudaSlice};
-    /// # use nvidia_video_codec_sdk::{
-    /// #     sys::nvEncodeAPI::{
-    /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
-    /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_INITIALIZE_PARAMS,
-    /// #         NV_ENC_INPUT_RESOURCE_TYPE,
-    /// #         NV_ENC_PIC_PARAMS,
-    /// #         NV_ENC_PIC_STRUCT,
-    /// #         NV_ENC_REGISTER_RESOURCE,
-    /// #     },
-    /// #     Encoder,
-    /// # };
-    /// # const WIDTH: u32 = 1920;
-    /// # const HEIGHT: u32 = 1080;
-    /// # const DATA_LEN: usize = (WIDTH * HEIGHT * 4) as usize;
-    /// //* Create encoder. *//
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// # let encoder = Encoder::initialize_with_cuda(cuda_device.clone()).unwrap();
-    ///
-    /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
-    /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
-    /// # let encode_guids = encoder.get_encode_guids().unwrap();
-    /// # assert!(encode_guids.contains(&encode_guid));
-    /// # let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
-    /// # let input_formats = encoder.get_supported_input_formats(encode_guid).unwrap();
-    /// # assert!(input_formats.contains(&buffer_format));
-    ///
-    /// //* Begin encoder session. *//
-    /// # let session = encoder
-    /// #     .start_session(
-    /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
-    /// #             .display_aspect_ratio(16, 9)
-    /// #             .framerate(30, 1)
-    /// #             .enable_picture_type_decision(),
-    /// #     )
-    /// #     .unwrap();
-    ///
-    /// // Allocate memory with CUDA.
-    /// let cuda_slice = cuda_device.alloc_zeros::<u8>(DATA_LEN).unwrap();
-    ///
-    /// // FIXME: Fails for unknown reason.
-    /// // Register and map the resource.
-    /// let (_mapped_resource, buf_fmt) = session.register_and_map_input_resource(
-    ///     NV_ENC_REGISTER_RESOURCE::new(
-    ///         NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
-    ///         WIDTH,
-    ///         HEIGHT,
-    ///         *cuda_slice.device_ptr() as *mut c_void,
-    ///         buffer_format,
-    ///     )
-    ///     .pitch(WIDTH * 4), // ARGB format has 4 bytes per pixel.
-    /// ).unwrap();
-    /// assert_eq!(buffer_format, buf_fmt);
-    /// ```
     pub fn register_generic_resource<T>(
         &self,
         marker: T,
@@ -309,6 +262,7 @@ impl Session {
         Ok(RegisteredResource {
             reg_ptr: registered_resource,
             map_ptr: mapped_resource,
+            pitch,
             encoder: &self.encoder,
             _marker: marker,
         })
@@ -322,6 +276,7 @@ impl Session {
 #[derive(Debug)]
 pub struct Buffer<'a> {
     pub(crate) ptr: *mut c_void,
+    pitch: u32,
     encoder: &'a Encoder,
 }
 
@@ -371,6 +326,7 @@ impl<'a> Buffer<'a> {
     /// //* Begin encoder session. *//
     /// # let session = encoder
     /// #     .start_session(
+    /// #         buffer_format,
     /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
     /// #             .display_aspect_ratio(16, 9)
     /// #             .framerate(30, 1)
@@ -380,11 +336,11 @@ impl<'a> Buffer<'a> {
     ///
     /// // Create an input buffer.
     /// let mut input_buffer = session
-    ///     .create_input_buffer(WIDTH, HEIGHT, buffer_format)
+    ///     .create_input_buffer()
     ///     .unwrap();
     /// unsafe { input_buffer.lock().unwrap().write(&[0; DATA_LEN]) };
     /// ```
-    pub fn lock<'b>(&'b self) -> Result<BufferLock<'b, 'a>, EncodeError> {
+    pub fn lock<'b>(&'b mut self) -> Result<BufferLock<'b, 'a>, EncodeError> {
         self.lock_inner(true)
     }
 
@@ -401,61 +357,12 @@ impl<'a> Buffer<'a> {
     /// If this returns [`EncodeError::EncoderBusy`] or
     /// [`EncodeError::LockBusy`] then that means the lock is still busy and
     /// the client should retry in a few milliseconds.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use cudarc::driver::CudaDevice;
-    /// # use nvidia_video_codec_sdk::{
-    /// #     sys::nvEncodeAPI::{
-    /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
-    /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_INITIALIZE_PARAMS,
-    /// #         NV_ENC_PIC_PARAMS,
-    /// #         NV_ENC_PIC_STRUCT,
-    /// #     },
-    /// #     EncodeError,
-    /// #     Encoder,
-    /// # };
-    /// # const WIDTH: u32 = 1920;
-    /// # const HEIGHT: u32 = 1080;
-    /// //* Create encoder. *//
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// # let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
-    /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
-    /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
-    /// # let encode_guids = encoder.get_encode_guids().unwrap();
-    /// # assert!(encode_guids.contains(&encode_guid));
-    /// # let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
-    /// # let input_formats = encoder.get_supported_input_formats(encode_guid).unwrap();
-    /// # assert!(input_formats.contains(&buffer_format));
-    /// //* Begin encoder session. *//
-    /// # let session = encoder
-    /// #     .start_session(
-    /// #         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
-    /// #             .display_aspect_ratio(16, 9)
-    /// #             .framerate(30, 1)
-    /// #             .enable_picture_type_decision(),
-    /// #     )
-    /// #     .unwrap();
-    ///
-    /// // Create an input buffer.
-    /// let mut input_buffer = session
-    ///     .create_input_buffer(WIDTH, HEIGHT, buffer_format)
-    ///     .unwrap();
-    ///
-    /// let lock1 = input_buffer.lock().unwrap();
-    /// let lock2 = input_buffer.try_lock();
-    /// // FIXME: Apparently two locks are Ok?
-    /// assert_eq!(lock2.unwrap_err(), EncodeError::LockBusy);
-    /// drop(lock1)
-    /// ```
-    pub fn try_lock<'b>(&'b self) -> Result<BufferLock<'b, 'a>, EncodeError> {
+    pub fn try_lock<'b>(&'b mut self) -> Result<BufferLock<'b, 'a>, EncodeError> {
         self.lock_inner(false)
     }
 
     #[inline]
-    fn lock_inner<'b>(&'b self, wait: bool) -> Result<BufferLock<'b, 'a>, EncodeError> {
+    fn lock_inner<'b>(&'b mut self, wait: bool) -> Result<BufferLock<'b, 'a>, EncodeError> {
         let mut lock_input_buffer_params = NV_ENC_LOCK_INPUT_BUFFER {
             version: NV_ENC_LOCK_INPUT_BUFFER_VER,
             inputBuffer: self.ptr,
@@ -469,6 +376,7 @@ impl<'a> Buffer<'a> {
 
         let data_ptr = lock_input_buffer_params.bufferDataPtr;
         let pitch = lock_input_buffer_params.pitch;
+        self.pitch = pitch;
 
         Ok(BufferLock {
             buffer: self,
@@ -487,6 +395,10 @@ impl Drop for Buffer<'_> {
 }
 
 impl EncoderInput for Buffer<'_> {
+    fn pitch(&self) -> u32 {
+        self.pitch
+    }
+
     fn handle(&mut self) -> *mut c_void {
         self.ptr
     }
@@ -558,7 +470,7 @@ impl<'a> Bitstream<'a> {
     /// # Errors
     ///
     /// Could error if we run out of memory.
-    pub fn lock(&self) -> Result<BitstreamLock, EncodeError> {
+    pub fn lock(&mut self) -> Result<BitstreamLock, EncodeError> {
         self.lock_inner(true)
     }
 
@@ -574,11 +486,11 @@ impl<'a> Bitstream<'a> {
     /// [`EncodeError::LockBusy`] could be returned if the lock is currently
     /// busy. This is a recoverable error and the client should retry in a
     /// few milliseconds.
-    pub fn try_lock(&self) -> Result<BitstreamLock, EncodeError> {
+    pub fn try_lock(&mut self) -> Result<BitstreamLock, EncodeError> {
         self.lock_inner(false)
     }
 
-    fn lock_inner(&self, wait: bool) -> Result<BitstreamLock, EncodeError> {
+    fn lock_inner(&mut self, wait: bool) -> Result<BitstreamLock, EncodeError> {
         // Lock bitstream.
         let mut lock_bitstream_buffer_params = NV_ENC_LOCK_BITSTREAM {
             version: NV_ENC_LOCK_BITSTREAM_VER,
@@ -689,6 +601,7 @@ impl Drop for BitstreamLock<'_, '_> {
 pub struct RegisteredResource<'a, T> {
     pub(crate) reg_ptr: *mut c_void,
     pub(crate) map_ptr: *mut c_void,
+    pitch: u32,
     encoder: &'a Encoder,
     // A generic marker to make sure the external resources are dropped
     // after the resource is unregistered.
@@ -711,6 +624,10 @@ impl<T> Drop for RegisteredResource<'_, T> {
 }
 
 impl<T> EncoderInput for RegisteredResource<'_, T> {
+    fn pitch(&self) -> u32 {
+        self.pitch
+    }
+
     fn handle(&mut self) -> *mut c_void {
         self.map_ptr
     }

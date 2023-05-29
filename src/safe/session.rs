@@ -5,12 +5,17 @@
 //! frames. The [`Session`] also stores some information such as the encode
 //! width and height so that you do not have to keep repeating it each time.
 
-use super::{
-    api::ENCODE_API,
-    encoder::Encoder,
-    result::{EncodeError, ErrorKind},
+use super::{api::ENCODE_API, encoder::Encoder, result::EncodeError};
+use crate::{
+    sys::nvEncodeAPI::{
+        NV_ENC_BUFFER_FORMAT,
+        NV_ENC_PIC_PARAMS,
+        NV_ENC_PIC_PARAMS_VER,
+        NV_ENC_PIC_STRUCT,
+    },
+    EncoderInput,
+    EncoderOutput,
 };
-use crate::sys::nvEncodeAPI::{NV_ENC_BUFFER_FORMAT, NV_ENC_PIC_PARAMS};
 
 /// An encoding session to create input/output buffers and encode frames.
 ///
@@ -36,7 +41,11 @@ impl Session {
     /// ```
     /// # use cudarc::driver::CudaDevice;
     /// # use nvidia_video_codec_sdk::{
-    /// #     sys::nvEncodeAPI::{NV_ENC_CODEC_H264_GUID, NV_ENC_INITIALIZE_PARAMS},
+    /// #     sys::nvEncodeAPI::{
+    /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
+    /// #         NV_ENC_CODEC_H264_GUID,
+    /// #         NV_ENC_INITIALIZE_PARAMS,
+    /// #     },
     /// #     Encoder,
     /// # };
     /// //* Create encoder. *//
@@ -49,7 +58,10 @@ impl Session {
     /// # assert!(encode_guids.contains(&encode_guid));
     ///
     /// let session = encoder
-    ///     .start_session(NV_ENC_INITIALIZE_PARAMS::new(encode_guid, 1920, 1080))
+    ///     .start_session(
+    ///         NV_ENC_BUFFER_FORMAT_ARGB,
+    ///         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, 1920, 1080),
+    ///     )
     ///     .unwrap();
     /// // We can still use the encoder like this:
     /// let _input_formats = session
@@ -110,6 +122,7 @@ impl Session {
     /// // Begin encoder session.
     /// let session = encoder
     ///     .start_session(
+    ///         buffer_format,
     ///         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
     ///             .display_aspect_ratio(16, 9)
     ///             .framerate(30, 1)
@@ -119,29 +132,54 @@ impl Session {
     ///
     /// //* Create input and output buffers. *//
     /// # let mut input_buffer = session
-    /// #     .create_input_buffer(WIDTH, HEIGHT, buffer_format)
+    /// #     .create_input_buffer()
     /// #     .unwrap();
     /// # let mut output_bitstream = session.create_output_bitstream().unwrap();
     ///
     /// // Encode frame.
     /// unsafe { input_buffer.lock().unwrap().write(&[0; DATA_LEN]) };
     /// session
-    ///     .encode_picture(NV_ENC_PIC_PARAMS::new(
-    ///         WIDTH,
-    ///         HEIGHT,
+    ///     .encode_picture(
     ///         &mut input_buffer,
     ///         &mut output_bitstream,
-    ///         buffer_format,
-    ///         NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
-    ///     ))
+    ///     )
     ///     .unwrap();
     /// # // TODO: check that output is correct.
-    /// let _data = output_bitstream.lock_and_read(true).unwrap();
+    /// let _data = output_bitstream.lock().unwrap().data();
     /// ```
-    pub fn encode_picture(
+    pub fn encode_picture<I: EncoderInput, O: EncoderOutput>(
         &self,
-        mut encode_pic_params: NV_ENC_PIC_PARAMS,
+        input_buffer: &mut I,
+        output_bitstream: &mut O,
     ) -> Result<(), EncodeError> {
+        let mut encode_pic_params = NV_ENC_PIC_PARAMS {
+            version: NV_ENC_PIC_PARAMS_VER,
+            inputWidth: self.width,
+            inputHeight: self.height,
+            inputPitch: self.width, // FIXME: Does pitch need to be configurable here?
+            inputBuffer: input_buffer.handle(),
+            outputBitstream: output_bitstream.handle(),
+            bufferFmt: self.buffer_format,
+            pictureStruct: NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
+            ..Default::default()
+        };
+        unsafe { (ENCODE_API.encode_picture)(self.encoder.ptr, &mut encode_pic_params) }
+            .result(&self.encoder)
+    }
+
+    /// Send an EOS notifications to flush the encoder.
+    ///
+    /// This function is called automatically on drop, but if you wish to
+    /// get the data after flushing, you should call this function yourself.
+    ///
+    /// # Errors
+    ///
+    /// Could error if we run out of memory.
+    ///
+    /// If this returns [`EncodeError::EncoderBusy`] then you should retry after
+    /// a few milliseconds.
+    pub fn end_of_stream(&self) -> Result<(), EncodeError> {
+        let mut encode_pic_params = NV_ENC_PIC_PARAMS::end_of_stream();
         unsafe { (ENCODE_API.encode_picture)(self.encoder.ptr, &mut encode_pic_params) }
             .result(&self.encoder)
     }
@@ -150,9 +188,7 @@ impl Session {
 /// Send an EOS notifications on drop to flush the encoder.
 impl Drop for Session {
     fn drop(&mut self) {
-        while matches!(
-            self.encode_picture(NV_ENC_PIC_PARAMS::end_of_stream()),
-            Err(err) if err.kind() == ErrorKind::EncoderBusy
-        ) {}
+        self.end_of_stream()
+            .expect("The encoder should not be busy.");
     }
 }
