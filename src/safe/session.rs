@@ -156,7 +156,7 @@ impl Session {
             version: NV_ENC_PIC_PARAMS_VER,
             inputWidth: self.width,
             inputHeight: self.height,
-            inputPitch: self.width, // FIXME: Does pitch need to be configurable here?
+            inputPitch: input_buffer.pitch(),
             inputBuffer: input_buffer.handle(),
             outputBitstream: output_bitstream.handle(),
             bufferFmt: self.buffer_format,
