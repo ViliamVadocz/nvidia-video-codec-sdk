@@ -3,6 +3,8 @@
 
 use super::nvEncodeAPI::GUID;
 
+// Search for `//.*\nstatic const\s+GUID\s+NV_ENC_\w+_GUID\s+=\n\{.*\};`
+
 // =========================================================================================
 // Encode Codec GUIDS supported by the NvEncodeAPI interface.
 // =========================================================================================
@@ -137,10 +139,6 @@ pub const NV_ENC_HEVC_PROFILE_FREXT_GUID: GUID = GUID {
     Data4: [0x9c, 0xbd, 0xb6, 0x16, 0xbd, 0x62, 0x13, 0x41],
 };
 
-// =========================================================================================
-// * Preset GUIDS supported by the NvEncodeAPI interface.
-// =========================================================================================
-
 /// GUID for the AV1 main encoding preset.
 /// {5f2a39f5-f14e-4f95-9a9e-b76d568fcf97}
 pub const NV_ENC_AV1_PROFILE_MAIN_GUID: GUID = GUID {
@@ -150,95 +148,9 @@ pub const NV_ENC_AV1_PROFILE_MAIN_GUID: GUID = GUID {
     Data4: [0x9a, 0x9e, 0xb7, 0x6d, 0x56, 0x8f, 0xcf, 0x97],
 };
 
-/// GUID for the default encoding preset.
-/// {B2DFB705-4EBD-4C49-9B5F-24A777D3E587}
-#[deprecated]
-pub const NV_ENC_PRESET_DEFAULT_GUID: GUID = GUID {
-    Data1: 0xb2df_b705,
-    Data2: 0x4ebd,
-    Data3: 0x4c49,
-    Data4: [0x9b, 0x5f, 0x24, 0xa7, 0x77, 0xd3, 0xe5, 0x87],
-};
-
-/// GUID for the high performance encoding preset.
-/// {60E4C59F-E846-4484-A56D-CD45BE9FDDF6}
-#[deprecated]
-pub const NV_ENC_PRESET_HP_GUID: GUID = GUID {
-    Data1: 0x60e4_c59f,
-    Data2: 0xe846,
-    Data3: 0x4484,
-    Data4: [0xa5, 0x6d, 0xcd, 0x45, 0xbe, 0x9f, 0xdd, 0xf6],
-};
-
-/// GUID for the high quality encoding preset.
-/// {34DBA71D-A77B-4B8F-9C3E-B6D5DA24C012}
-#[deprecated]
-pub const NV_ENC_PRESET_HQ_GUID: GUID = GUID {
-    Data1: 0x34db_a71d,
-    Data2: 0xa77b,
-    Data3: 0x4b8f,
-    Data4: [0x9c, 0x3e, 0xb6, 0xd5, 0xda, 0x24, 0xc0, 0x12],
-};
-
-/// GUID for the Blu-ray-compatible encoding preset.
-/// {82E3E450-BDBB-4e40-989C-82A90DF9EF32}
-#[deprecated]
-pub const NV_ENC_PRESET_BD_GUID: GUID = GUID {
-    Data1: 0x82e3_e450,
-    Data2: 0xbdbb,
-    Data3: 0x4e40,
-    Data4: [0x98, 0x9c, 0x82, 0xa9, 0xd, 0xf9, 0xef, 0x32],
-};
-
-/// GUID for the low latency encoding preset.
-/// {49DF21C5-6DFA-4feb-9787-6ACC9EFFB726}
-#[deprecated]
-pub const NV_ENC_PRESET_LOW_LATENCY_DEFAULT_GUID: GUID = GUID {
-    Data1: 0x49df_21c5,
-    Data2: 0x6dfa,
-    Data3: 0x4feb,
-    Data4: [0x97, 0x87, 0x6a, 0xcc, 0x9e, 0xff, 0xb7, 0x26],
-};
-
-/// GUID for the low latency, high quality encoding preset.
-/// {C5F733B9-EA97-4cf9-BEC2-BF78A74FD105}
-#[deprecated]
-pub const NV_ENC_PRESET_LOW_LATENCY_HQ_GUID: GUID = GUID {
-    Data1: 0xc5f7_33b9,
-    Data2: 0xea97,
-    Data3: 0x4cf9,
-    Data4: [0xbe, 0xc2, 0xbf, 0x78, 0xa7, 0x4f, 0xd1, 0x5],
-};
-
-/// GUID for the low latency, high performance encoding preset.
-/// {67082A44-4BAD-48FA-98EA-93056D150A58}
-#[deprecated]
-pub const NV_ENC_PRESET_LOW_LATENCY_HP_GUID: GUID = GUID {
-    Data1: 0x6708_2a44,
-    Data2: 0x4bad,
-    Data3: 0x48fa,
-    Data4: [0x98, 0xea, 0x93, 0x5, 0x6d, 0x15, 0xa, 0x58],
-};
-
-/// GUID for the lossless encoding preset.
-/// {D5BFB716-C604-44e7-9BB8-DEA5510FC3AC}
-#[deprecated]
-pub const NV_ENC_PRESET_LOSSLESS_DEFAULT_GUID: GUID = GUID {
-    Data1: 0xd5bf_b716,
-    Data2: 0xc604,
-    Data3: 0x44e7,
-    Data4: [0x9b, 0xb8, 0xde, 0xa5, 0x51, 0xf, 0xc3, 0xac],
-};
-
-/// GUID for the lossless, high performance encoding preset.
-/// {149998E7-2364-411d-82EF-179888093409}
-#[deprecated]
-pub const NV_ENC_PRESET_LOSSLESS_HP_GUID: GUID = GUID {
-    Data1: 0x1499_98e7,
-    Data2: 0x2364,
-    Data3: 0x411d,
-    Data4: [0x82, 0xef, 0x17, 0x98, 0x88, 0x9, 0x34, 0x9],
-};
+// =========================================================================================
+// * Preset GUIDS supported by the NvEncodeAPI interface.
+// =========================================================================================
 
 // Performance degrades and quality improves as we move from P1 to P7. Presets
 // P3 to P7 for H264 and Presets P2 to P7 for HEVC have B frames enabled by

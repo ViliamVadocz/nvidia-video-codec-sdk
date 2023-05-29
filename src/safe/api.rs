@@ -22,6 +22,7 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_INPUT_PTR,
     NV_ENC_LOCK_BITSTREAM,
     NV_ENC_LOCK_INPUT_BUFFER,
+    NV_ENC_LOOKAHEAD_PIC_PARAMS,
     NV_ENC_MAP_INPUT_RESOURCE,
     NV_ENC_MEONLY_PARAMS,
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
@@ -31,6 +32,7 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_RECONFIGURE_PARAMS,
     NV_ENC_REGISTERED_PTR,
     NV_ENC_REGISTER_RESOURCE,
+    NV_ENC_RESTORE_ENCODER_STATE_PARAMS,
     NV_ENC_SEQUENCE_PARAM_PAYLOAD,
     NV_ENC_STAT,
     NV_ENC_TUNING_INFO,
@@ -121,6 +123,10 @@ type GetSequenceParamEx = unsafe extern "C" fn(
     *mut NV_ENC_INITIALIZE_PARAMS,
     *mut NV_ENC_SEQUENCE_PARAM_PAYLOAD,
 ) -> NVENCSTATUS;
+type RestoreEncoderState =
+    unsafe extern "C" fn(*mut c_void, *mut NV_ENC_RESTORE_ENCODER_STATE_PARAMS) -> NVENCSTATUS;
+type LookaheadPicture =
+    unsafe extern "C" fn(*mut c_void, *mut NV_ENC_LOOKAHEAD_PIC_PARAMS) -> NVENCSTATUS;
 
 /// An instance of the `NvEncodeAPI` interface, containing function pointers
 /// which should be used to interface with the rest of the Encoder API.
@@ -207,6 +213,10 @@ pub struct EncodeAPI {
     pub get_last_error_string: GetLastErrorString,
     #[doc(alias = "NvEncSetIOCudaStreams")]
     pub set_io_cuda_streams: SetIOCudaStreams,
+    #[doc(alias = "NvEncRestoreEncoderState")]
+    pub restore_encoder_state: RestoreEncoderState,
+    #[doc(alias = "NvEncLookaheadPicture")]
+    pub lookahead_picture: LookaheadPicture,
 }
 
 fn assert_versions_match(max_supported_version: u32) {
@@ -281,6 +291,8 @@ impl EncodeAPI {
             run_motion_estimation_only: function_list.nvEncRunMotionEstimationOnly.expect(MSG),
             get_last_error_string: function_list.nvEncGetLastErrorString.expect(MSG),
             set_io_cuda_streams: function_list.nvEncSetIOCudaStreams.expect(MSG),
+            restore_encoder_state: function_list.nvEncRestoreEncoderState.expect(MSG),
+            lookahead_picture: function_list.nvEncLookaheadPicture.expect(MSG),
         }
     }
 }
