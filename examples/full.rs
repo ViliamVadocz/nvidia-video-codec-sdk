@@ -271,7 +271,10 @@ fn main() {
         let lock = output_bitstream
             .lock()
             .expect("Bitstream lock should be available.");
-        println!("{lock:#?}");
+        dbg!(lock.frame_index());
+        dbg!(lock.timestamp());
+        dbg!(lock.duration());
+        dbg!(lock.picture_type());
 
         let data = lock.data();
         out_file
