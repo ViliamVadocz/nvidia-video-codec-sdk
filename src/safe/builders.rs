@@ -47,10 +47,11 @@ impl NV_ENC_INITIALIZE_PARAMS {
     /// [`NV_ENC_INITIALIZE_PARAMS::preset_guid`].
     ///
     /// The client can query the interface for codec-specific parameters
-    /// using [`Encoder::get_preset_config`]. It can then modify (if required)
-    /// some of the codec config parameters and send down a custom config
-    /// structure using this method. Even in this case the client is
-    /// recommended to pass the same preset GUID it has used to get the config.
+    /// using [`Encoder::get_preset_config`](super::encoder::Encoder::get_preset_config).
+    /// It can then modify (if required) some of the codec config parameters and
+    /// send down a custom config structure using this method. Even in this
+    /// case the client is recommended to pass the same preset GUID it has
+    /// used to get the config.
     #[must_use]
     pub fn encode_config(mut self, encode_config: &mut NV_ENC_CONFIG) -> Self {
         self.encodeConfig = encode_config;

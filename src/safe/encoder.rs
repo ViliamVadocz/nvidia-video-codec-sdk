@@ -45,7 +45,7 @@ type Device = Arc<CudaDevice>;
 /// This type has further function to create input and output buffers
 /// and encode pictures.
 ///
-/// See the [NVIDIA Video Codec SDK Encoder Programming Guide](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html).
+/// See [NVIDIA Video Codec SDK - Video Encoder API Programming Guide](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html).
 #[derive(Debug)]
 pub struct Encoder {
     pub(crate) ptr: *mut c_void,

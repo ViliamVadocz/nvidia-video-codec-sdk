@@ -346,17 +346,21 @@ impl<'a> Buffer<'a> {
 
     /// Non-blocking version of [`Buffer::lock`]. See it for more info.
     ///
-    /// This function will return [`EncodeError::EncoderBusy`] or
-    /// [`EncodeError::LockBusy`] if the lock is being used. The NVIDIA
-    /// documentation from the header file is unclear about this.
+    /// This function will return an error with
+    /// [`ErrorKind::EncoderBusy`](super::ErrorKind::EncoderBusy) or
+    /// [`ErrorKind::LockBusy`](super::ErrorKind::LockBusy) if the lock is being
+    /// used. The NVIDIA documentation from the header file is unclear about
+    /// this.
     ///
     /// # Errors
     ///
     /// Could error if we run out of memory.
     ///
-    /// If this returns [`EncodeError::EncoderBusy`] or
-    /// [`EncodeError::LockBusy`] then that means the lock is still busy and
-    /// the client should retry in a few milliseconds.
+    /// If this returns an error with
+    /// [`ErrorKind::EncoderBusy`](super::ErrorKind::EncoderBusy) or
+    /// [`ErrorKind::LockBusy`](super::ErrorKind::LockBusy) then that means the
+    /// lock is still busy and the client should retry in a few
+    /// milliseconds.
     pub fn try_lock<'b>(&'b mut self) -> Result<BufferLock<'b, 'a>, EncodeError> {
         self.lock_inner(false)
     }
@@ -476,16 +480,17 @@ impl<'a> Bitstream<'a> {
 
     /// Non-blocking version of [`Bitstream::lock`]. See it for more info.
     ///
-    /// This function will return [`EncodeError::LockBusy`] if the lock is
-    /// currently busy.
+    /// This function will return an error with
+    /// [`ErrorKind::LockBusy`](super::ErrorKind::LockBusy) if the
+    /// lock is currently busy.
     ///
     /// # Errors
     ///
     /// Could error if we run out of memory.
     ///
-    /// [`EncodeError::LockBusy`] could be returned if the lock is currently
-    /// busy. This is a recoverable error and the client should retry in a
-    /// few milliseconds.
+    /// An error with [`ErrorKind::LockBusy`](super::ErrorKind::LockBusy) could
+    /// be returned if the lock is currently busy. This is a recoverable
+    /// error and the client should retry in a few milliseconds.
     pub fn try_lock(&mut self) -> Result<BitstreamLock, EncodeError> {
         self.lock_inner(false)
     }

@@ -83,12 +83,14 @@ impl Session {
     /// incorrect, or if we run out memory.
     ///
     /// There are two recoverable errors:
-    /// - If this returns [`EncodeError::EncoderBusy`] then you should retry
-    ///   after a few milliseconds.
-    /// - If this returns [`EncodeError::NeedMoreInput`], the client should not
-    ///   lock the output bitstream yet. They should continue encoding until
-    ///   this function returns `Ok`, and then lock the bitstreams in the order
-    ///   in which they were originally used.
+    /// - If this returns an error with
+    ///   [`ErrorKind::EncoderBusy`](super::ErrorKind::EncoderBusy) then you
+    ///   should retry after a few milliseconds.
+    /// - If this returns an error with
+    ///   [`ErrorKind::NeedMoreInput`](super::ErrorKind::NeedMoreInput), the
+    ///   client should not lock the output bitstream yet. They should continue
+    ///   encoding until this function returns `Ok`, and then lock the
+    ///   bitstreams in the order in which they were originally used.
     ///
     /// # Examples
     ///
@@ -176,8 +178,9 @@ impl Session {
     ///
     /// Could error if we run out of memory.
     ///
-    /// If this returns [`EncodeError::EncoderBusy`] then you should retry after
-    /// a few milliseconds.
+    /// If this returns an error with
+    /// [`ErrorKind::EncoderBusy`](super::ErrorKind::EncoderBusy) then you
+    /// should retry after a few milliseconds.
     pub fn end_of_stream(&self) -> Result<(), EncodeError> {
         let mut encode_pic_params = NV_ENC_PIC_PARAMS::end_of_stream();
         unsafe { (ENCODE_API.encode_picture)(self.encoder.ptr, &mut encode_pic_params) }
