@@ -7,7 +7,6 @@ use cudarc::driver::{DevicePtr, MappedBuffer};
 use super::{api::ENCODE_API, encoder::Encoder, result::EncodeError, session::Session};
 use crate::sys::nvEncodeAPI::{
     NV_ENC_BUFFER_FORMAT,
-    NV_ENC_BUFFER_USAGE,
     NV_ENC_CREATE_BITSTREAM_BUFFER,
     NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
     NV_ENC_CREATE_INPUT_BUFFER,
@@ -179,6 +178,14 @@ impl Session {
         })
     }
 
+    /// Create a [`RegisteredResource`] from a [`MappedBuffer`].
+    ///
+    /// See [`Session::register_generic_resource`].
+    ///
+    /// # Errors
+    ///
+    /// Could error if registration or mapping fails,
+    /// if the resource is invalid, or if we run out of memory.
     pub fn register_cuda_resource<'a>(
         &self,
         mapped_buffer: MappedBuffer<'a>,
@@ -186,25 +193,21 @@ impl Session {
         let device_ptr = *mapped_buffer.device_ptr();
         self.register_generic_resource(
             mapped_buffer,
-            NV_ENC_REGISTER_RESOURCE::new(
-                NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
-                self.width,
-                self.height,
-                device_ptr as *mut c_void,
-                self.buffer_format,
-            )
-            .pitch(self.width * 4), // FIXME: Assumes ARGB buffer format
+            NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
+            device_ptr as *mut c_void,
+            self.width * 4, // FIXME: Assumes buffer format with 4 bytes per pixel (e.g. ARGB)
         )
     }
 
     /// Create a [`RegisteredResource`].
     ///
+    /// This function is generic in the marker. This is so that you can
+    /// optionally put a value on the [`RegisteredResource`] to make sure that
+    /// value does not get dropped while the resource is registered. You should
+    /// prefer using specific functions for the resource you are registering,
+    /// such as [`Session::register_cuda_resource`], when they are available.
+    ///
     /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#input-buffers-allocated-externally).
-    ///
-    /// # Panics
-    ///
-    /// Panics if the `register_resource_params.bufferUsage` is not
-    /// [`NV_ENC_BUFFER_USAGE::NV_ENC_INPUT_IMAGE`].
     ///
     /// # Errors
     ///
@@ -271,15 +274,19 @@ impl Session {
     pub fn register_generic_resource<T>(
         &self,
         marker: T,
-        mut register_resource_params: NV_ENC_REGISTER_RESOURCE,
+        resource_type: NV_ENC_INPUT_RESOURCE_TYPE,
+        resource_to_register: *mut c_void,
+        pitch: u32,
     ) -> Result<RegisteredResource<T>, EncodeError> {
-        // Currently it looks like only input is supported.
-        assert_eq!(
-            register_resource_params.bufferUsage,
-            NV_ENC_BUFFER_USAGE::NV_ENC_INPUT_IMAGE
-        );
-
         // Register resource.
+        let mut register_resource_params = NV_ENC_REGISTER_RESOURCE::new(
+            resource_type,
+            self.width,
+            self.height,
+            resource_to_register,
+            self.buffer_format,
+        )
+        .pitch(pitch);
         unsafe { (ENCODE_API.register_resource)(self.encoder.ptr, &mut register_resource_params) }
             .result(&self.encoder)?;
         let registered_resource = register_resource_params.registeredResource;
