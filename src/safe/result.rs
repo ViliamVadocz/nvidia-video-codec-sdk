@@ -184,7 +184,7 @@ impl NVENCSTATUS {
     ///
     /// ```
     /// # use cudarc::driver::CudaDevice;
-    /// # use nvidia_video_codec_sdk::{sys::nvEncodeAPI::GUID, EncodeError, Encoder};
+    /// # use nvidia_video_codec_sdk::{sys::nvEncodeAPI::GUID, EncodeError, Encoder, ErrorKind};
     /// # let cuda_device = CudaDevice::new(0).unwrap();
     /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     /// // Cause an error by passing in an invalid GUID.
@@ -196,7 +196,7 @@ impl NVENCSTATUS {
     /// assert_eq!(error.kind(), ErrorKind::InvalidParam);
     /// // Get the error message.
     /// // Unfortunately, it's not always helpful.
-    /// assert_eq!(error.string(), "EncodeAPI Internal Error.");
+    /// assert_eq!(error.string(), Some("EncodeAPI Internal Error."));
     /// ```
     pub fn result(self, encoder: &Encoder) -> Result<(), EncodeError> {
         self.result_without_string().map_err(|mut err| {

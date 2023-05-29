@@ -7,23 +7,18 @@
 
 use std::ffi::c_void;
 
-use crate::{
-    buffer::{EncoderInput, EncoderOutput},
-    sys::nvEncodeAPI::{
-        GUID,
-        NV_ENC_BUFFER_FORMAT,
-        NV_ENC_CODEC_PIC_PARAMS,
-        NV_ENC_CONFIG,
-        NV_ENC_INITIALIZE_PARAMS,
-        NV_ENC_INITIALIZE_PARAMS_VER,
-        NV_ENC_INPUT_RESOURCE_TYPE,
-        NV_ENC_PIC_FLAGS,
-        NV_ENC_PIC_PARAMS,
-        NV_ENC_PIC_PARAMS_VER,
-        NV_ENC_PIC_STRUCT,
-        NV_ENC_REGISTER_RESOURCE,
-        NV_ENC_REGISTER_RESOURCE_VER,
-    },
+use crate::sys::nvEncodeAPI::{
+    GUID,
+    NV_ENC_BUFFER_FORMAT,
+    NV_ENC_CONFIG,
+    NV_ENC_INITIALIZE_PARAMS,
+    NV_ENC_INITIALIZE_PARAMS_VER,
+    NV_ENC_INPUT_RESOURCE_TYPE,
+    NV_ENC_PIC_FLAGS,
+    NV_ENC_PIC_PARAMS,
+    NV_ENC_PIC_PARAMS_VER,
+    NV_ENC_REGISTER_RESOURCE,
+    NV_ENC_REGISTER_RESOURCE_VER,
 };
 
 impl NV_ENC_INITIALIZE_PARAMS {
@@ -92,39 +87,6 @@ impl NV_ENC_INITIALIZE_PARAMS {
 }
 
 impl NV_ENC_PIC_PARAMS {
-    /// Builder for [`NV_ENC_PIC_PARAMS`].
-    ///
-    /// # Arguments
-    ///
-    /// * `width` - Input frame width.
-    /// * `height` - Input frame height.
-    /// * `input_buffer` - Input buffer which implements [`EncoderInput`].
-    /// * `output_bitstream` - Output bitstream buffer which implements
-    ///   [`EncoderOutput`].
-    /// * `buffer_format` - Input buffer format.
-    /// * `picture_struct` - The structure of the input picture.
-    #[must_use]
-    pub fn new<INPUT: EncoderInput, OUTPUT: EncoderOutput>(
-        width: u32,
-        height: u32,
-        input_buffer: &mut INPUT,
-        output_bitstream: &mut OUTPUT,
-        buffer_format: NV_ENC_BUFFER_FORMAT,
-    ) -> Self {
-        NV_ENC_PIC_PARAMS {
-            version: NV_ENC_PIC_PARAMS_VER,
-            inputWidth: width,
-            inputHeight: height,
-            inputPitch: width,
-            // TODO: Which flag should be used when?
-            inputBuffer: input_buffer.handle(),
-            outputBitstream: output_bitstream.handle(),
-            bufferFmt: buffer_format,
-            pictureStruct: NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
-            ..Default::default()
-        }
-    }
-
     /// Create an EOS empty frame that is used at the
     /// end of encoding to flush the encoder.
     #[must_use]
@@ -135,29 +97,6 @@ impl NV_ENC_PIC_PARAMS {
             ..Default::default()
         }
     }
-
-    /// Specifies the input buffer pitch.
-    #[must_use]
-    pub fn pitch(mut self, pitch: u32) -> Self {
-        self.inputPitch = pitch;
-        self
-    }
-
-    /// Specifies the frame index associated with the input frame.
-    #[must_use]
-    pub fn frame_id(mut self, frame_id: u32) -> Self {
-        self.frameIdx = frame_id;
-        self
-    }
-
-    /// Specifies the codec specific per-picture encoding parameters.
-    #[must_use]
-    pub fn codec_pic_params(mut self, codec_pic_params: NV_ENC_CODEC_PIC_PARAMS) -> Self {
-        self.codecPicParams = codec_pic_params;
-        self
-    }
-
-    // TODO: Add other options
 }
 
 impl NV_ENC_REGISTER_RESOURCE {
