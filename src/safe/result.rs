@@ -94,6 +94,18 @@ pub enum ErrorKind {
     /// The client is attempting to unmap a resource
     /// that has not been successfully mapped.
     ResourceNotMapped = 25,
+    /// The encode driver requires more output buffers to write an
+    /// output bitstream. If this error is returned from
+    /// [`EncodeAPI.restore_encoder_state`], this is not a fatal error. If the
+    /// client is encoding with B frames then,
+    /// [`EncodeAPI.restore_encoder_state`] API might be requiring the extra
+    /// output buffer for accommodating overlay frame output in a separate
+    /// buffer, for AV1 codec. In this case, the client must call
+    /// [`EncodeAPI.restore_encoder_state`] API again with
+    /// an output bitstream as input along with the parameters in the previous
+    /// call. When operating in asynchronous mode of encoding, client must
+    /// also specify the completion event.
+    NeedMoreOutput = 26,
 }
 
 /// Wrapper struct around [`NVENCSTATUS`].
@@ -162,6 +174,7 @@ impl From<NVENCSTATUS> for ErrorKind {
             NVENCSTATUS::NV_ENC_ERR_RESOURCE_REGISTER_FAILED => Self::ResourceRegisterFailed,
             NVENCSTATUS::NV_ENC_ERR_RESOURCE_NOT_REGISTERED => Self::ResourceNotRegistered,
             NVENCSTATUS::NV_ENC_ERR_RESOURCE_NOT_MAPPED => Self::ResourceNotMapped,
+            NVENCSTATUS::NV_ENC_ERR_NEED_MORE_OUTPUT => Self::NeedMoreOutput,
         }
     }
 }

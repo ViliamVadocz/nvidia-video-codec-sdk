@@ -70,9 +70,9 @@ fn main() {
         Some(path) => println!("cargo:rustc-link-search={}", path.display()),
         None => panic!(
             "Could not find NVIDIA Video Codec SDK libraries.\nPlace the libraries where you have \
-             your CUDA installation, or set `NVIDIA_VIDEO_CODEC_SDK_PATH` to the root directory \
-             of your installation so that `$NVIDIA_VIDEO_CODEC_SDK_PATH/lib/{}` and \
-             `$NVIDIA_VIDEO_CODEC_SDK_PATH/lib/{}` are valid paths to the library files.",
+             your CUDA installation, or set `NVIDIA_VIDEO_CODEC_SDK_PATH` to the directory of \
+             your installation so that `$NVIDIA_VIDEO_CODEC_SDK_PATH/{}` and \
+             `$NVIDIA_VIDEO_CODEC_SDK_PATH/{}` are valid paths to the library files.",
             NVENC_LIB.1, NVDEC_LIB.1
         ),
     }
