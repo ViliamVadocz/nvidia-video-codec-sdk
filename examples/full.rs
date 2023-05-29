@@ -1,11 +1,10 @@
 use std::{
-    ffi::c_void,
     fs::{File, OpenOptions},
     io::Write,
     sync::Arc,
 };
 
-use cudarc::driver::{CudaDevice, DevicePtr};
+use cudarc::driver::CudaDevice;
 #[allow(deprecated)]
 use nvidia_video_codec_sdk::sys::nvEncodeAPI::NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
 use nvidia_video_codec_sdk::{
@@ -15,10 +14,6 @@ use nvidia_video_codec_sdk::{
         NV_ENC_CODEC_H264_GUID,
         NV_ENC_H264_PROFILE_HIGH_GUID,
         NV_ENC_INITIALIZE_PARAMS,
-        NV_ENC_INPUT_RESOURCE_TYPE,
-        NV_ENC_PIC_PARAMS,
-        NV_ENC_PIC_STRUCT,
-        NV_ENC_REGISTER_RESOURCE,
         NV_ENC_TUNING_INFO,
     },
 };
@@ -84,18 +79,16 @@ fn generate_test_input(buf: &mut [u8], width: u32, height: u32, i: u32, i_max: u
     }
 }
 
-/// Creates an encoded bitstream for a 128 frame, 1920x1080 video.
-/// This bitstream will be written to ./test.bin
-/// To view this bitstream use a decoder like ffmpeg.
+/// Initialize Vulkan and find the desired memory type index.
 ///
-/// For ffmpeg use `ffmpeg -i test.bin -vcodec copy test.mp4` to
-/// decode the video.
-fn main() {
-    const WIDTH: u32 = 1920;
-    const HEIGHT: u32 = 1080;
-    const FRAMES: u32 = 128;
-
-    // Initialize Vulkan.
+/// This function will probably only work on UNIX because we require the
+/// `khr_external_memory_fd` extension to export Opaque File Descriptors.
+///
+/// The `memory_type_index` corresponds to the memory type which is
+/// `HOST_VISIBLE`  which is needed so that we can map device memory later in
+/// the example.
+fn initialize_vulkan() -> (Arc<Device>, u32) {
+    // Initialize Vulkan library.
     let vulkan_library = VulkanLibrary::new().expect("Vulkan should be installed correctly");
     let instance = Instance::new(
         vulkan_library,
@@ -138,25 +131,39 @@ fn main() {
         "Vulkan should be installed correctly and `Device` should support `khr_external_memory_fd`",
     );
 
-    // Create a new CudaDevice to interact with cuda.
-    let cuda_device = CudaDevice::new(0).expect("Cuda should be installed correctly");
+    (vulkan_device, memory_type_index)
+}
 
-    let encoder = Encoder::initialize_with_cuda(cuda_device.clone()).expect(
-        "NVENC API initialization should succeed given that the NVIDIA Video Codec SDK has been \
-         installed correctly",
-    );
+/// Creates an encoded bitstream for a 128 frame, 1920x1080 video.
+/// This bitstream will be written to ./test.bin
+/// To view this bitstream use a decoder like ffmpeg.
+///
+/// For ffmpeg use `ffmpeg -i test.bin -vcodec copy test.mp4` to
+/// decode the video.
+fn main() {
+    const WIDTH: u32 = 1920;
+    const HEIGHT: u32 = 1080;
+    const FRAMES: u32 = 128;
+
+    let (vulkan_device, memory_type_index) = initialize_vulkan();
+
+    // Create a new CudaDevice to interact with cuda.
+    let cuda_device = CudaDevice::new(0).expect("Cuda should be installed correctly.");
+
+    let encoder = Encoder::initialize_with_cuda(cuda_device.clone())
+        .expect("NVIDIA Video Codec SDK should be installed correctly.");
 
     // Get all encode guids supported by the GPU.
     let encode_guids = encoder
         .get_encode_guids()
-        .expect("The encoder should be able to get the supported guids");
+        .expect("The encoder should be able to get the supported guids.");
     let encode_guid = NV_ENC_CODEC_H264_GUID;
     assert!(encode_guids.contains(&encode_guid));
 
     // Get available preset guids based on encode guid.
     let preset_guids = encoder
         .get_preset_guids(encode_guid)
-        .expect("The encoder should have a preset for H.264");
+        .expect("The encoder should have a preset for H.264.");
     #[allow(deprecated)]
     let preset_guid = NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
     assert!(preset_guids.contains(&preset_guid));
@@ -164,14 +171,14 @@ fn main() {
     // Get available profiles based on encode guid.
     let profile_guids = encoder
         .get_profile_guids(encode_guid)
-        .expect("The encoder should have a profile for H.264");
+        .expect("The encoder should have a profile for H.264.");
     let profile_guid = NV_ENC_H264_PROFILE_HIGH_GUID;
     assert!(profile_guids.contains(&profile_guid));
 
     // Get input formats based on the encode guid.
     let input_formats = encoder
         .get_supported_input_formats(encode_guid)
-        .expect("The encoder should be able to receive input buffer formats");
+        .expect("The encoder should be able to get supported input buffer formats.");
     let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
     assert!(input_formats.contains(&buffer_format));
 
@@ -183,42 +190,43 @@ fn main() {
             preset_guid,
             NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY,
         )
-        .expect("Encoder should be able to create config based on presets");
+        .expect("Encoder should be able to create config based on presets.");
 
     // Initialize a new encoder session based on the `preset_config`
     // we generated before.
     let session = encoder
         .start_session(
+            buffer_format,
             NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
                 .display_aspect_ratio(16, 9)
                 .framerate(30, 1)
                 .enable_picture_type_decision()
                 .encode_config(&mut preset_config.presetCfg),
         )
-        .expect("Encoder should be initialized correctly");
+        .expect("Encoder should be initialized correctly.");
 
     // Calculate the number of buffers we need based on the interval of P frames and
     // the look ahead depth.
     let num_bufs = usize::try_from(preset_config.presetCfg.frameIntervalP)
-        .expect("frame intervalP should always be positive")
+        .expect("frame intervalP should always be positive.")
         + usize::try_from(preset_config.presetCfg.rcParams.lookaheadDepth)
-            .expect("lookahead depth should always be positive");
+            .expect("lookahead depth should always be positive.");
 
     let mut output_buffers: Vec<_> = (0..num_bufs)
         .map(|_| {
             session
                 .create_output_bitstream()
-                .expect("The encoder should be able to create bitstreams")
+                .expect("The encoder should be able to create bitstreams.")
         })
         .collect();
 
-    // Write result to output file "test.bin".
+    // Write result to output file "example_output.bin".
     let mut out_file = OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
-        .open("test.bin")
-        .expect("Permissions and available space should allow creating a new file");
+        .open("example_output.bin")
+        .expect("Permissions and available space should allow creating a new file.");
 
     // Generate each of the frames with Vulkan.
     let file_descriptors = (0..FRAMES)
@@ -236,7 +244,8 @@ fn main() {
 
     // Encode each of the frames.
     for (i, file_descriptor) in file_descriptors.into_iter().enumerate() {
-        let output_buffer = &mut output_buffers[i % num_bufs];
+        println!("Encoding frame {:>3} / {FRAMES}", i + 1);
+        let output_bitstream = &mut output_buffers[i % num_bufs];
 
         // Import file descriptor using CUDA.
         let mut external_memory = unsafe {
@@ -248,42 +257,26 @@ fn main() {
             .expect("External memory should be mappable.");
 
         // Register and map with NVENC.
-        let (mut input_buffer, buf_fmt) = session
-            .register_and_map_input_resource(
-                NV_ENC_REGISTER_RESOURCE::new(
-                    NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
-                    WIDTH,
-                    HEIGHT,
-                    *mapped_buffer.device_ptr() as *mut c_void,
-                    buffer_format,
-                )
-                .pitch(WIDTH * 4),
-            )
-            .expect("Should be able to register buffer with right size as nvenc resource");
-        assert_eq!(buffer_format, buf_fmt);
+        let mut registered_resource = session
+            .register_cuda_resource(WIDTH * 4, mapped_buffer)
+            .expect("Buffer should be mapped and available for registration with NVENC.");
 
         session
-            .encode_picture(NV_ENC_PIC_PARAMS::new(
-                WIDTH,
-                HEIGHT,
-                &mut input_buffer,
-                output_buffer,
-                buffer_format,
-                NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
-            ))
+            .encode_picture(&mut registered_resource, output_bitstream)
             .expect("Encoder should be able to encode valid pictures");
 
-        let out = output_buffer
-            .lock_and_read(true)
+        // Immediately locking is probably inefficient
+        // (you should encode multiple before locking),
+        // but for simplicity we just lock immediately.
+        let lock = output_bitstream
+            .lock()
             .expect("Bitstream lock should be available.");
-        out_file
-            .write_all(out)
-            .expect("Writing should succeed because `out_file` was opened with write permissions");
+        println!("{lock:#?}");
 
-        // Drop registered resource before dropping the CUDA mapped buffer.
-        // TODO: `MappedResource` should store a reference or `PhantomData`
-        // to enforce drop order.
-        drop(input_buffer);
+        let data = lock.data();
+        out_file
+            .write_all(data)
+            .expect("Writing should succeed because `out_file` was opened with write permissions.");
     }
 }
 
