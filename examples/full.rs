@@ -8,7 +8,6 @@ use cudarc::driver::CudaDevice;
 #[allow(deprecated)]
 use nvidia_video_codec_sdk::sys::nvEncodeAPI::NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
 use nvidia_video_codec_sdk::{
-    safe::encoder::Encoder,
     sys::nvEncodeAPI::{
         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
         NV_ENC_CODEC_H264_GUID,
@@ -16,6 +15,7 @@ use nvidia_video_codec_sdk::{
         NV_ENC_INITIALIZE_PARAMS,
         NV_ENC_TUNING_INFO,
     },
+    Encoder,
 };
 use vulkano::{
     device::{
