@@ -3,6 +3,8 @@
 
 use super::nvEncodeAPI::GUID;
 
+// Search for `//.*\nstatic const\s+GUID\s+NV_ENC_\w+_GUID\s+=\n\{.*\};`
+
 // =========================================================================================
 // Encode Codec GUIDS supported by the NvEncodeAPI interface.
 // =========================================================================================
@@ -137,10 +139,6 @@ pub const NV_ENC_HEVC_PROFILE_FREXT_GUID: GUID = GUID {
     Data4: [0x9c, 0xbd, 0xb6, 0x16, 0xbd, 0x62, 0x13, 0x41],
 };
 
-// =========================================================================================
-// * Preset GUIDS supported by the NvEncodeAPI interface.
-// =========================================================================================
-
 /// GUID for the AV1 main encoding preset.
 /// {5f2a39f5-f14e-4f95-9a9e-b76d568fcf97}
 pub const NV_ENC_AV1_PROFILE_MAIN_GUID: GUID = GUID {
@@ -149,6 +147,10 @@ pub const NV_ENC_AV1_PROFILE_MAIN_GUID: GUID = GUID {
     Data3: 0x4f95,
     Data4: [0x9a, 0x9e, 0xb7, 0x6d, 0x56, 0x8f, 0xcf, 0x97],
 };
+
+// =========================================================================================
+// * Preset GUIDS supported by the NvEncodeAPI interface.
+// =========================================================================================
 
 /// GUID for the default encoding preset.
 /// {B2DFB705-4EBD-4C49-9B5F-24A777D3E587}

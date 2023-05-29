@@ -8,6 +8,11 @@ pub const fn NVENCAPI_STRUCT_VERSION(ver: u32) -> u32 {
     super::nvEncodeAPI::NVENCAPI_VERSION | (ver << 16) | (0x7 << 28)
 }
 
+// Search for `#define \w+_VER` and copy the whole line.
+// Then remove constants which are already defined in `nvEncodeAPI.rs`.
+// Finally convert to Rust syntax by a swapping `#define` for `pub const`,
+// adding type, equals, and semicolon.
+
 pub const NV_ENC_CAPS_PARAM_VER: u32 = NVENCAPI_STRUCT_VERSION(1);
 pub const NV_ENC_ENCODE_OUT_PARAMS_VER: u32 = NVENCAPI_STRUCT_VERSION(1);
 pub const NV_ENC_CREATE_INPUT_BUFFER_VER: u32 = NVENCAPI_STRUCT_VERSION(1);
