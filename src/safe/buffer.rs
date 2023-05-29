@@ -20,7 +20,6 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_MAP_INPUT_RESOURCE,
     NV_ENC_MAP_INPUT_RESOURCE_VER,
     NV_ENC_REGISTER_RESOURCE,
-    NV_ENC_REGISTER_RESOURCE_VER,
 };
 
 /// If a type implements this trait it means it is a valid input buffer

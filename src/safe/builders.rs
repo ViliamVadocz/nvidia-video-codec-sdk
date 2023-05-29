@@ -110,7 +110,6 @@ impl NV_ENC_PIC_PARAMS {
         input_buffer: &mut INPUT,
         output_bitstream: &mut OUTPUT,
         buffer_format: NV_ENC_BUFFER_FORMAT,
-        picture_struct: NV_ENC_PIC_STRUCT,
     ) -> Self {
         NV_ENC_PIC_PARAMS {
             version: NV_ENC_PIC_PARAMS_VER,
@@ -121,7 +120,7 @@ impl NV_ENC_PIC_PARAMS {
             inputBuffer: input_buffer.handle(),
             outputBitstream: output_bitstream.handle(),
             bufferFmt: buffer_format,
-            pictureStruct: picture_struct,
+            pictureStruct: NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
             ..Default::default()
         }
     }

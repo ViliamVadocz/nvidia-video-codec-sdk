@@ -1,3 +1,10 @@
+//! Defines [`Session`] which represents an ongoing encoder session.
+//!
+//! You need to start a session using [`Encoder::start_session`] before
+//! you can initialize input or output buffers, and before you can encode
+//! frames. The [`Session`] also stores some information such as the encode
+//! width and height so that you do not have to keep repeating it each time.
+
 use super::{
     api::ENCODE_API,
     encoder::Encoder,
