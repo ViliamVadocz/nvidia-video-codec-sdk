@@ -18,6 +18,7 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_LOCK_INPUT_BUFFER_VER,
     NV_ENC_MAP_INPUT_RESOURCE,
     NV_ENC_MAP_INPUT_RESOURCE_VER,
+    NV_ENC_PIC_TYPE,
     NV_ENC_REGISTER_RESOURCE,
 };
 
@@ -327,8 +328,9 @@ pub struct Buffer<'a> {
 impl<'a> Buffer<'a> {
     /// Lock the input buffer.
     ///
-    /// On a successful lock you get a [`Lock`] which can be used to write
-    /// data to the input buffer. On drop, [`Lock`] will unlock the buffer.
+    /// On a successful lock you get a [`BufferLock`] which can be used to write
+    /// data to the input buffer. On drop, [`BufferLock`] will unlock the
+    /// buffer.
     ///
     /// This function will block until a lock is acquired. For the non-blocking
     /// version see [`Buffer::try_lock`].
@@ -382,7 +384,7 @@ impl<'a> Buffer<'a> {
     ///     .unwrap();
     /// unsafe { input_buffer.lock().unwrap().write(&[0; DATA_LEN]) };
     /// ```
-    pub fn lock<'b>(&'b self) -> Result<Lock<'b, 'a>, EncodeError> {
+    pub fn lock<'b>(&'b self) -> Result<BufferLock<'b, 'a>, EncodeError> {
         self.lock_inner(true)
     }
 
@@ -448,12 +450,12 @@ impl<'a> Buffer<'a> {
     /// assert_eq!(lock2.unwrap_err(), EncodeError::LockBusy);
     /// drop(lock1)
     /// ```
-    pub fn try_lock<'b>(&'b self) -> Result<Lock<'b, 'a>, EncodeError> {
+    pub fn try_lock<'b>(&'b self) -> Result<BufferLock<'b, 'a>, EncodeError> {
         self.lock_inner(false)
     }
 
     #[inline]
-    fn lock_inner<'b>(&'b self, wait: bool) -> Result<Lock<'b, 'a>, EncodeError> {
+    fn lock_inner<'b>(&'b self, wait: bool) -> Result<BufferLock<'b, 'a>, EncodeError> {
         let mut lock_input_buffer_params = NV_ENC_LOCK_INPUT_BUFFER {
             version: NV_ENC_LOCK_INPUT_BUFFER_VER,
             inputBuffer: self.ptr,
@@ -468,7 +470,7 @@ impl<'a> Buffer<'a> {
         let data_ptr = lock_input_buffer_params.bufferDataPtr;
         let pitch = lock_input_buffer_params.pitch;
 
-        Ok(Lock {
+        Ok(BufferLock {
             buffer: self,
             data_ptr,
             pitch,
@@ -495,15 +497,16 @@ impl EncoderInput for Buffer<'_> {
 /// This type is created via [`Buffer::lock`] or [`Buffer::try_lock`].
 /// The purpose of this type is similar to [`std::sync::MutexGuard`] -
 /// it automatically unlocks the buffer then the lock goes out of scope.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
-pub struct Lock<'a, 'b> {
+pub struct BufferLock<'a, 'b> {
     buffer: &'a Buffer<'b>,
     data_ptr: *mut c_void,
     #[allow(dead_code)]
     pitch: u32,
 }
 
-impl Lock<'_, '_> {
+impl BufferLock<'_, '_> {
     /// Write data to the buffer.
     ///
     /// # Safety
@@ -522,7 +525,7 @@ impl Lock<'_, '_> {
     }
 }
 
-impl Drop for Lock<'_, '_> {
+impl Drop for BufferLock<'_, '_> {
     fn drop(&mut self) {
         unsafe { (ENCODE_API.unlock_input_buffer)(self.buffer.encoder.ptr, self.buffer.ptr) }
             .result(self.buffer.encoder)
@@ -540,23 +543,42 @@ pub struct Bitstream<'a> {
     encoder: &'a Encoder,
 }
 
-// TODO: There is a lot of extra data and statistics that we get when we lock
-// the bitstream. Maybe expose that somehow? Consider an API similar to `Buffer`
-// and `Lock`.
-//
-// No example because I think I will still change this API.
 impl<'a> Bitstream<'a> {
-    /// Lock the output bitstream and read from it.
+    /// Lock the output bitstream.
     ///
-    /// The function can block until the bitstream is available when `wait` is
-    /// set to `true`.
+    /// On a successful lock you get a [`BitstreamLock`] which can be used to
+    /// access the bitstream data as well as any other information the
+    /// encoder provides when locking a bitstream.
+    ///
+    /// This function will block until a lock is acquired. For the non-blocking
+    /// version see [`Bitstream::try_lock`].
+    ///
+    /// See [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/nvenc-video-encoder-api-prog-guide/index.html#retrieving-encoded-output).
     ///
     /// # Errors
     ///
-    /// [`EncodeError::LockBusy`] could be returned if `wait` is set to `false`
-    /// and the lock is currently busy. This is a recoverable error and the
-    /// client should retry in a few milliseconds.
-    pub fn lock_and_read(&mut self, wait: bool) -> Result<&[u8], EncodeError> {
+    /// Could error if we run out of memory.
+    pub fn lock(&self) -> Result<BitstreamLock, EncodeError> {
+        self.lock_inner(true)
+    }
+
+    /// Non-blocking version of [`Bitstream::lock`]. See it for more info.
+    ///
+    /// This function will return [`EncodeError::LockBusy`] if the lock is
+    /// currently busy.
+    ///
+    /// # Errors
+    ///
+    /// Could error if we run out of memory.
+    ///
+    /// [`EncodeError::LockBusy`] could be returned if the lock is currently
+    /// busy. This is a recoverable error and the client should retry in a
+    /// few milliseconds.
+    pub fn try_lock(&self) -> Result<BitstreamLock, EncodeError> {
+        self.lock_inner(false)
+    }
+
+    fn lock_inner(&self, wait: bool) -> Result<BitstreamLock, EncodeError> {
         // Lock bitstream.
         let mut lock_bitstream_buffer_params = NV_ENC_LOCK_BITSTREAM {
             version: NV_ENC_LOCK_BITSTREAM_VER,
@@ -574,11 +596,14 @@ impl<'a> Bitstream<'a> {
         let data_size = lock_bitstream_buffer_params.bitstreamSizeInBytes as usize;
         let data = unsafe { std::slice::from_raw_parts_mut(data_ptr.cast::<u8>(), data_size) };
 
-        // Unlock bitstream.
-        unsafe { (ENCODE_API.unlock_bitstream)(self.encoder.ptr, self.ptr) }
-            .result(self.encoder)?;
-
-        Ok(data)
+        Ok(BitstreamLock {
+            bitstream: self,
+            data,
+            frame_index: lock_bitstream_buffer_params.frameIdx,
+            timestamp: lock_bitstream_buffer_params.outputTimeStamp,
+            duration: lock_bitstream_buffer_params.outputDuration,
+            picture_type: lock_bitstream_buffer_params.pictureType,
+        })
     }
 }
 
@@ -593,6 +618,63 @@ impl Drop for Bitstream<'_> {
 impl EncoderOutput for Bitstream<'_> {
     fn handle(&mut self) -> *mut c_void {
         self.ptr
+    }
+}
+
+/// An RAII lock on the output bitstream buffer.
+///
+/// This type is created via [`Bitstream::lock`] or [`Bitstream::try_lock`].
+/// The purpose of this type is similar to [`std::sync::MutexGuard`] -
+/// it automatically unlocks the buffer then the lock goes out of scope.
+#[derive(Debug)]
+pub struct BitstreamLock<'a, 'b> {
+    bitstream: &'a Bitstream<'b>,
+    data: &'a [u8],
+    // statistics and other info
+    frame_index: u32,
+    timestamp: u64,
+    duration: u64,
+    picture_type: NV_ENC_PIC_TYPE,
+    // TODO: other fields
+}
+
+impl BitstreamLock<'_, '_> {
+    /// Getter for the data contained in the output bitstream.
+    #[must_use]
+    pub fn data(&self) -> &[u8] {
+        self.data
+    }
+
+    /// Getter for the frame index.
+    #[must_use]
+    pub fn frame_index(&self) -> u32 {
+        self.frame_index
+    }
+
+    /// Getter for the timestamp.
+    #[must_use]
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp
+    }
+
+    /// Getter for the duration.
+    #[must_use]
+    pub fn duration(&self) -> u64 {
+        self.duration
+    }
+
+    /// Getter for the picture type.
+    #[must_use]
+    pub fn picture_type(&self) -> NV_ENC_PIC_TYPE {
+        self.picture_type
+    }
+}
+
+impl Drop for BitstreamLock<'_, '_> {
+    fn drop(&mut self) {
+        unsafe { (ENCODE_API.unlock_bitstream)(self.bitstream.encoder.ptr, self.bitstream.ptr) }
+            .result(self.bitstream.encoder)
+            .expect("The encoder and bitstream pointers should be valid.");
     }
 }
 
