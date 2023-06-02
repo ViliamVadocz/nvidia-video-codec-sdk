@@ -200,8 +200,8 @@ impl Session {
     pub fn register_cuda_resource<'a>(
         &self,
         pitch: u32,
-        mapped_buffer: MappedBuffer<'a>,
-    ) -> Result<RegisteredResource<MappedBuffer<'a>>, EncodeError> {
+        mapped_buffer: MappedBuffer,
+    ) -> Result<RegisteredResource<MappedBuffer>, EncodeError> {
         let device_ptr = *mapped_buffer.device_ptr();
         self.register_generic_resource(
             mapped_buffer,

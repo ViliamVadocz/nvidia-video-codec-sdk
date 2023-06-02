@@ -9,7 +9,7 @@ cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cudarc = { git = "https://github.com/coreylowman/cudarc.git", branch = "main" }
+cudarc = { git = "https://github.com/ViliamVadocz/cudarc.git", branch = "improve-em-api" }
 lazy_static = "1.4.0"
 
 [dev-dependencies]
