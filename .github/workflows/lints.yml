@@ -1,4 +1,8 @@
 on: [push, pull_request]
+
+env: 
+  CARGO_TERM_COLOR: always
+
 name: lints
 jobs:
   clippy:
@@ -18,7 +22,7 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --features ci-check -- -D warnings
+        args: --features ci-check -- --deny warnings
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -32,4 +36,16 @@ jobs:
     - uses: actions-rs/cargo@v1
       with:
         command: fmt
-        args: --all -- --check
+        args: --all --check
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: nightly
+        override: true
+    - uses: actions-rs/cargo@v1
+      with:
+        command: doc
