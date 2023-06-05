@@ -197,7 +197,7 @@ impl Session {
     ///
     /// Could error if registration or mapping fails,
     /// if the resource is invalid, or if we run out of memory.
-    pub fn register_cuda_resource<'a>(
+    pub fn register_cuda_resource(
         &self,
         pitch: u32,
         mapped_buffer: MappedBuffer,
