@@ -248,7 +248,7 @@ fn main() {
         let output_bitstream = &mut output_buffers[i % num_bufs];
 
         // Import file descriptor using CUDA.
-        let mut external_memory = unsafe {
+        let external_memory = unsafe {
             cuda_device.import_external_memory(file_descriptor, (WIDTH * HEIGHT * 4) as u64)
         }
         .expect("File descriptor should be valid for importing.");
