@@ -104,6 +104,11 @@ impl Session {
     ///   encoding until this function returns `Ok`, and then lock the
     ///   bitstreams in the order in which they were originally used.
     ///
+    /// # Panics
+    ///
+    /// Panics if codec specific parameters are provided for a different codec
+    /// than the one used in the session.
+    ///
     /// # Examples
     ///
     /// ```
@@ -173,13 +178,13 @@ impl Session {
         output_bitstream: &mut O,
         params: EncodePictureParams,
     ) -> Result<(), EncodeError> {
-        params.codec_params.as_ref().map(|p| {
+        if let Some(codec_params) = &params.codec_params {
             assert_eq!(
-                p.get_codec_guid(),
+                codec_params.get_codec_guid(),
                 self.encode_guid,
                 "The provided codec specific params must match the codec used"
             );
-        });
+        };
         let mut encode_pic_params = NV_ENC_PIC_PARAMS {
             version: NV_ENC_PIC_PARAMS_VER,
             inputWidth: self.width,
@@ -190,7 +195,7 @@ impl Session {
             bufferFmt: self.buffer_format,
             pictureStruct: NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
             inputTimeStamp: params.input_timestamp,
-            codecPicParams: params.codec_params.map(|p| p.into()).unwrap_or_default(),
+            codecPicParams: params.codec_params.map(Into::into).unwrap_or_default(),
             pictureType: params.picture_type,
             ..Default::default()
         };
