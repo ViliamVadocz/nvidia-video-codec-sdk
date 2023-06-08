@@ -1,4 +1,12 @@
-use std::{collections::VecDeque, sync::Arc, thread, time::Duration};
+use std::{
+    collections::VecDeque,
+    fs::OpenOptions,
+    io::Write,
+    path::Path,
+    sync::Arc,
+    thread,
+    time::Duration,
+};
 
 use cudarc::driver::CudaDevice;
 use nvidia_video_codec_sdk::{
@@ -13,7 +21,10 @@ use nvidia_video_codec_sdk::{
     ErrorKind,
 };
 
-fn encode_blanks(cuda_device: Arc<CudaDevice>) -> Result<(), EncodeError> {
+fn encode_blanks<P: AsRef<Path>>(
+    cuda_device: Arc<CudaDevice>,
+    file_path: Option<P>,
+) -> Result<(), EncodeError> {
     const FRAMES: usize = 128;
     const BUFFERS: usize = 16;
     const WIDTH: u32 = 1920;
@@ -24,6 +35,14 @@ fn encode_blanks(cuda_device: Arc<CudaDevice>) -> Result<(), EncodeError> {
     // The size should be adjusted depending on the buffer format and pitch/stride.
     #[allow(clippy::large_stack_arrays)]
     const FRAME: [u8; (WIDTH * HEIGHT * 4) as usize] = [255; (WIDTH * HEIGHT * 4) as usize];
+
+    let mut output = file_path.map(|path| {
+        OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(path)
+            .expect("Path should be valid.")
+    });
 
     // Initialize encoder.
     let encoder = Encoder::initialize_with_cuda(cuda_device)?;
@@ -96,14 +115,21 @@ fn encode_blanks(cuda_device: Arc<CudaDevice>) -> Result<(), EncodeError> {
         let (in_buf, mut out_buf) = in_use
             .pop_front()
             .expect("There should be at least one element since that was just checked.");
-        let _data = out_buf.lock()?.data();
+        let lock = out_buf.lock()?;
+        if let Some(file) = output.as_mut() {
+            file.write_all(lock.data()).unwrap();
+        }
+        drop(lock);
         input_buffers.push(in_buf);
         output_bitstreams.push(out_buf);
     }
 
     // Finish reading the rest of the bitstream buffers.
     for (_, mut out_buf) in in_use {
-        let _data = out_buf.lock()?.data();
+        let lock = out_buf.lock()?;
+        if let Some(file) = output.as_mut() {
+            file.write_all(lock.data()).unwrap();
+        }
     }
 
     Ok(())
@@ -111,7 +137,11 @@ fn encode_blanks(cuda_device: Arc<CudaDevice>) -> Result<(), EncodeError> {
 
 #[test]
 fn encoder_works() {
-    encode_blanks(CudaDevice::new(0).expect("CUDA should be installed.")).unwrap();
+    encode_blanks(
+        CudaDevice::new(0).expect("CUDA should be installed."),
+        Some("blanks.h264"),
+    )
+    .unwrap();
 }
 
 #[test]
@@ -120,7 +150,7 @@ fn encode_in_parallel() {
         let cuda_device = CudaDevice::new(0).expect("CUDA should be installed.");
         for _ in 0..4 {
             let thread_cuda_device = cuda_device.clone();
-            scope.spawn(|| encode_blanks(thread_cuda_device).unwrap());
+            scope.spawn(|| encode_blanks::<&str>(thread_cuda_device, None).unwrap());
         }
     });
 }
