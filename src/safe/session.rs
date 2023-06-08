@@ -5,13 +5,24 @@
 //! frames. The [`Session`] also stores some information such as the encode
 //! width and height so that you do not have to keep repeating it each time.
 
+use std::fmt::Debug;
+
 use super::{api::ENCODE_API, encoder::Encoder, result::EncodeError};
 use crate::{
     sys::nvEncodeAPI::{
+        GUID,
         NV_ENC_BUFFER_FORMAT,
+        NV_ENC_CODEC_AV1_GUID,
+        NV_ENC_CODEC_H264_GUID,
+        NV_ENC_CODEC_HEVC_GUID,
+        NV_ENC_CODEC_PIC_PARAMS,
         NV_ENC_PIC_PARAMS,
+        NV_ENC_PIC_PARAMS_AV1,
+        NV_ENC_PIC_PARAMS_H264,
+        NV_ENC_PIC_PARAMS_HEVC,
         NV_ENC_PIC_PARAMS_VER,
         NV_ENC_PIC_STRUCT,
+        NV_ENC_PIC_TYPE,
     },
     EncoderInput,
     EncoderOutput,
@@ -28,6 +39,7 @@ pub struct Session {
     pub(crate) width: u32,
     pub(crate) height: u32,
     pub(crate) buffer_format: NV_ENC_BUFFER_FORMAT,
+    pub(crate) encode_guid: GUID,
 }
 
 impl Session {
@@ -105,6 +117,7 @@ impl Session {
     /// #         NV_ENC_PIC_STRUCT,
     /// #     },
     /// #     Encoder,
+    /// #     EncodePictureParams
     /// # };
     /// # const WIDTH: u32 = 1920;
     /// # const HEIGHT: u32 = 1080;
@@ -144,6 +157,11 @@ impl Session {
     ///     .encode_picture(
     ///         &mut input_buffer,
     ///         &mut output_bitstream,
+    ///         // Optional picture parameters
+    ///         EncodePictureParams {
+    ///             input_timestamp: 42,
+    ///             ..Default::default()
+    ///         }
     ///     )
     ///     .unwrap();
     /// # // TODO: check that output is correct.
@@ -153,7 +171,15 @@ impl Session {
         &self,
         input_buffer: &mut I,
         output_bitstream: &mut O,
+        params: EncodePictureParams,
     ) -> Result<(), EncodeError> {
+        params.codec_params.as_ref().map(|p| {
+            assert_eq!(
+                p.get_codec_guid(),
+                self.encode_guid,
+                "The provided codec specific params must match the codec used"
+            );
+        });
         let mut encode_pic_params = NV_ENC_PIC_PARAMS {
             version: NV_ENC_PIC_PARAMS_VER,
             inputWidth: self.width,
@@ -163,6 +189,9 @@ impl Session {
             outputBitstream: output_bitstream.handle(),
             bufferFmt: self.buffer_format,
             pictureStruct: NV_ENC_PIC_STRUCT::NV_ENC_PIC_STRUCT_FRAME,
+            inputTimeStamp: params.input_timestamp,
+            codecPicParams: params.codec_params.map(|p| p.into()).unwrap_or_default(),
+            pictureType: params.picture_type,
             ..Default::default()
         };
         unsafe { (ENCODE_API.encode_picture)(self.encoder.ptr, &mut encode_pic_params) }
@@ -193,5 +222,63 @@ impl Drop for Session {
     fn drop(&mut self) {
         self.end_of_stream()
             .expect("The encoder should not be busy.");
+    }
+}
+
+/// Optional parameters for [`Session::encode_picture`].
+#[allow(missing_debug_implementations)] // CodecPictureParams doesn't implement Debug
+pub struct EncodePictureParams {
+    /// Opaque data used for identifying the corresponding encoded frame
+    pub input_timestamp: u64,
+    /// The picture type to use, if picture type decision is disabled in the
+    /// encoder
+    pub picture_type: NV_ENC_PIC_TYPE,
+    /// Codec-specific parameters
+    pub codec_params: Option<CodecPictureParams>,
+}
+
+impl Default for EncodePictureParams {
+    fn default() -> Self {
+        Self {
+            input_timestamp: 0,
+            picture_type: NV_ENC_PIC_TYPE::NV_ENC_PIC_TYPE_UNKNOWN,
+            codec_params: None,
+        }
+    }
+}
+
+/// Codec specific picture parameters
+#[allow(missing_debug_implementations)] // NV_ENC_PIC_PARAMS_H264 contains a union, thus doesn't derive Debug
+pub enum CodecPictureParams {
+    H264(NV_ENC_PIC_PARAMS_H264),
+    Hevc(NV_ENC_PIC_PARAMS_HEVC),
+    Av1(NV_ENC_PIC_PARAMS_AV1),
+}
+
+impl CodecPictureParams {
+    /// Returns the GUID representing the codec for which the parameters are
+    /// specified.
+    pub fn get_codec_guid(&self) -> GUID {
+        match self {
+            CodecPictureParams::H264(_) => NV_ENC_CODEC_H264_GUID,
+            CodecPictureParams::Hevc(_) => NV_ENC_CODEC_HEVC_GUID,
+            CodecPictureParams::Av1(_) => NV_ENC_CODEC_AV1_GUID,
+        }
+    }
+}
+
+impl From<CodecPictureParams> for NV_ENC_CODEC_PIC_PARAMS {
+    fn from(value: CodecPictureParams) -> Self {
+        match value {
+            CodecPictureParams::H264(params) => Self {
+                h264PicParams: params,
+            },
+            CodecPictureParams::Hevc(params) => Self {
+                hevcPicParams: params,
+            },
+            CodecPictureParams::Av1(params) => Self {
+                av1PicParams: params,
+            },
+        }
     }
 }

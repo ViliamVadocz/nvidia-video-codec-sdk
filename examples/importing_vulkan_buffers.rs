@@ -262,7 +262,11 @@ fn main() {
             .expect("Buffer should be mapped and available for registration with NVENC.");
 
         session
-            .encode_picture(&mut registered_resource, output_bitstream)
+            .encode_picture(
+                &mut registered_resource,
+                output_bitstream,
+                Default::default(),
+            )
             .expect("Encoder should be able to encode valid pictures");
 
         // Immediately locking is probably inefficient
