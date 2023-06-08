@@ -463,6 +463,7 @@ impl Encoder {
             width,
             height,
             buffer_format,
+            encode_guid: initialize_params.encodeGUID,
         })
     }
 }

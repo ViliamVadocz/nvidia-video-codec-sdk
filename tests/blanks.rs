@@ -62,7 +62,11 @@ fn encode_blanks(cuda_device: Arc<CudaDevice>) -> Result<(), EncodeError> {
 
         // Encode the frame.
         'encode: loop {
-            match session.encode_picture(&mut input_buffer, &mut output_bitstream) {
+            match session.encode_picture(
+                &mut input_buffer,
+                &mut output_bitstream,
+                Default::default(),
+            ) {
                 Ok(()) => {
                     // Success! Mark that these buffers are in-use.
                     in_use.push_back((input_buffer, output_bitstream));
