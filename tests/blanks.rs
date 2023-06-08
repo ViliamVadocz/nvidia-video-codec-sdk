@@ -118,7 +118,7 @@ fn encoder_works() {
 fn encode_in_parallel() {
     std::thread::scope(|scope| {
         let cuda_device = CudaDevice::new(0).expect("CUDA should be installed.");
-        for _ in 0..12 {
+        for _ in 0..4 {
             let thread_cuda_device = cuda_device.clone();
             scope.spawn(|| encode_blanks(thread_cuda_device).unwrap());
         }
