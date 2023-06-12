@@ -36,8 +36,7 @@ impl NV_ENC_INITIALIZE_PARAMS {
 
     /// Specifies the preset for encoding. If the preset GUID is set then
     /// the preset configuration will be applied before any other parameter.
-    #[must_use]
-    pub fn preset_guid(mut self, preset_guid: GUID) -> Self {
+    pub fn preset_guid(&mut self, preset_guid: GUID) -> &mut Self {
         self.presetGUID = preset_guid;
         self
     }
@@ -52,16 +51,14 @@ impl NV_ENC_INITIALIZE_PARAMS {
     /// send down a custom config structure using this method. Even in this
     /// case the client is recommended to pass the same preset GUID it has
     /// used to get the config.
-    #[must_use]
-    pub fn encode_config(mut self, encode_config: &mut NV_ENC_CONFIG) -> Self {
+    pub fn encode_config(&mut self, encode_config: &mut NV_ENC_CONFIG) -> &mut Self {
         self.encodeConfig = encode_config;
         self
     }
 
     /// Specifies the display aspect ratio (H264/HEVC) or the render
     /// width/height (AV1).
-    #[must_use]
-    pub fn display_aspect_ratio(mut self, width: u32, height: u32) -> Self {
+    pub fn display_aspect_ratio(&mut self, width: u32, height: u32) -> &mut Self {
         self.darWidth = width;
         self.darHeight = height;
         self
@@ -69,8 +66,7 @@ impl NV_ENC_INITIALIZE_PARAMS {
 
     /// Specifies the framerate in frames per second as a fraction
     /// `numerator / denominator`.
-    #[must_use]
-    pub fn framerate(mut self, numerator: u32, denominator: u32) -> Self {
+    pub fn framerate(&mut self, numerator: u32, denominator: u32) -> &mut Self {
         self.frameRateNum = numerator;
         self.frameRateDen = denominator;
         self
@@ -78,8 +74,7 @@ impl NV_ENC_INITIALIZE_PARAMS {
 
     /// Enable the Picture Type Decision to be taken by the
     /// `NvEncodeAPI` interface.
-    #[must_use]
-    pub fn enable_picture_type_decision(mut self) -> Self {
+    pub fn enable_picture_type_decision(&mut self) -> &mut Self {
         self.enablePTD = 1;
         self
     }
