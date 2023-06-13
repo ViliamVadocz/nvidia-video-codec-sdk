@@ -140,15 +140,14 @@ impl Session {
     /// # assert!(input_formats.contains(&buffer_format));
     ///
     /// // Begin encoder session.
-    /// let session = encoder
-    ///     .start_session(
-    ///         buffer_format,
-    ///         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
-    ///             .display_aspect_ratio(16, 9)
-    ///             .framerate(30, 1)
-    ///             .enable_picture_type_decision(),
-    ///     )
-    ///     .unwrap();
+    /// let mut initialize_params = NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT);
+    /// initialize_params.display_aspect_ratio(16, 9)
+    ///     .framerate(30, 1)
+    ///     .enable_picture_type_decision();
+    /// let session = encoder.start_session(
+    ///     buffer_format,
+    ///     initialize_params,
+    /// ).unwrap();
     ///
     /// //* Create input and output buffers. *//
     /// # let mut input_buffer = session

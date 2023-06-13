@@ -46,12 +46,11 @@ fn encode_blanks<P: AsRef<Path>>(
 
     // Initialize encoder.
     let encoder = Encoder::initialize_with_cuda(cuda_device)?;
-    let session = encoder.start_session(
-        BUFFER_FORMAT,
-        NV_ENC_INITIALIZE_PARAMS::new(ENCODE_GUID, WIDTH, HEIGHT)
-            .enable_picture_type_decision()
-            .framerate(FRAMERATE, 1),
-    )?;
+    let mut initialize_params = NV_ENC_INITIALIZE_PARAMS::new(ENCODE_GUID, WIDTH, HEIGHT);
+    initialize_params
+        .enable_picture_type_decision()
+        .framerate(FRAMERATE, 1);
+    let session = encoder.start_session(BUFFER_FORMAT, initialize_params)?;
 
     // Create input and output buffers.
     let mut input_buffers = (0..BUFFERS)
@@ -137,11 +136,7 @@ fn encode_blanks<P: AsRef<Path>>(
 
 #[test]
 fn encoder_works() {
-    encode_blanks(
-        CudaDevice::new(0).expect("CUDA should be installed."),
-        Some("blanks.h264"),
-    )
-    .unwrap();
+    encode_blanks(CudaDevice::new(0).expect("CUDA should be installed."), None).unwrap();
 }
 
 #[test]

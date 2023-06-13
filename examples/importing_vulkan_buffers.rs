@@ -194,15 +194,14 @@ fn main() {
 
     // Initialize a new encoder session based on the `preset_config`
     // we generated before.
+    let mut initialize_params = NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT);
+    initialize_params
+        .display_aspect_ratio(16, 9)
+        .framerate(30, 1)
+        .enable_picture_type_decision()
+        .encode_config(&mut preset_config.presetCfg);
     let session = encoder
-        .start_session(
-            buffer_format,
-            NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT)
-                .display_aspect_ratio(16, 9)
-                .framerate(30, 1)
-                .enable_picture_type_decision()
-                .encode_config(&mut preset_config.presetCfg),
-        )
+        .start_session(buffer_format, initialize_params)
         .expect("Encoder should be initialized correctly.");
 
     // Calculate the number of buffers we need based on the interval of P frames and
