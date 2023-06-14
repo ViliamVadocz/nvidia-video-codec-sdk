@@ -136,7 +136,7 @@ fn encode_blanks<P: AsRef<Path>>(
 
 #[test]
 fn encoder_works() {
-    encode_blanks(CudaDevice::new(0).expect("CUDA should be installed."), None).unwrap();
+    encode_blanks::<&str>(CudaDevice::new(0).expect("CUDA should be installed."), None).unwrap();
 }
 
 #[test]
