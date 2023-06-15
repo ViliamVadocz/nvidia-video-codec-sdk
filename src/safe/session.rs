@@ -224,8 +224,10 @@ impl Session {
 /// Send an EOS notifications on drop to flush the encoder.
 impl Drop for Session {
     fn drop(&mut self) {
-        self.end_of_stream()
-            .expect("The encoder should not be busy.");
+        if !std::thread::panicking() {
+            self.end_of_stream()
+                .expect("The encoder should not be busy.");
+        }
     }
 }
 
