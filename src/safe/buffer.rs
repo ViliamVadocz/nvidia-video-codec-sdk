@@ -278,6 +278,8 @@ pub struct Buffer<'a> {
     encoder: &'a Encoder,
 }
 
+unsafe impl Send for Buffer<'_> {}
+
 impl<'a> Buffer<'a> {
     /// Lock the input buffer.
     ///
@@ -456,6 +458,8 @@ pub struct Bitstream<'a> {
     encoder: &'a Encoder,
 }
 
+unsafe impl Send for Bitstream<'_> {}
+
 impl<'a> Bitstream<'a> {
     /// Lock the output bitstream.
     ///
@@ -609,6 +613,8 @@ pub struct RegisteredResource<'a, T> {
     // after the resource is unregistered.
     _marker: T,
 }
+
+unsafe impl Send for RegisteredResource<'_, MappedBuffer> {}
 
 /// Automatically unmap and unregister the external resource
 /// when it goes out of scope.
