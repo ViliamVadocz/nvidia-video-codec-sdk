@@ -1,0 +1,34 @@
+on:
+  push:
+    branches: [ "master" ]
+
+env: 
+  CARGO_TERM_COLOR: always
+
+name: docs
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --features ci-check --no-deps
+      - uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./target/doc
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    steps:
+      - uses: actions/deploy-pages@v2
+        id: deployment
