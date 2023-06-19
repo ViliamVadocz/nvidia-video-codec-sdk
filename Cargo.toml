@@ -2,6 +2,16 @@
 name = "nvidia-video-codec-sdk"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+rust-version = "1.70"
+
+description = "Bindings for NVIDIA Video Codec SDK"
+homepage = "https://github.com/ViliamVadocz/nvidia-video-codec-sdk"
+documentation = "https://docs.rs/nvidia-video-codec-sdk"
+repository = "https://github.com/ViliamVadocz/nvidia-video-codec-sdk"
+readme = "README.md"
+
+keywords = ["encoding", "decoding", "bindings", "nvidia", "cuda"]
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
