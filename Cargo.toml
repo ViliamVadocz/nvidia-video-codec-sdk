@@ -15,8 +15,7 @@ keywords = ["encoding", "decoding", "bindings", "nvidia", "cuda"]
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+features = ["ci-check"]
 
 [dependencies]
 cudarc = "0.9.10"
