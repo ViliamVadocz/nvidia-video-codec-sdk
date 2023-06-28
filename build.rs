@@ -1,28 +1,48 @@
 use std::path::PathBuf;
 
-// https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/
-// nvenc-video-encoder-api-prog-guide/index.html#basic-encoding-flow
-#[cfg(target_os = "linux")]
-const NVENC_LIB: &str = "nvidia-encode";
-#[cfg(target_os = "windows")]
-const NVENC_LIB: &str = "nvencodeapi";
+/// <a href="https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/
+/// nvenc-video-encoder-api-prog-guide/index.html#basic-encoding-flow"></a>
+#[cfg(unix)]
+const NVENC_LIB: (&str, &str) = ("nvidia-encode", "libnvidia-encode.so");
+#[cfg(windows)]
+const NVENC_LIB: (&str, &str) = ("nvencodeapi", "nvEncodeAPI.lib");
 
-// https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/
-// nvdec-video-decoder-api-prog-guide/index.html#
-// using-nvidia-video-decoder-nvdecode-api
-const NVDEC_LIB: &str = "nvcuvid";
+/// <a href="https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/
+/// nvdec-video-decoder-api-prog-guide/index.html#
+/// using-nvidia-video-decoder-nvdecode-api"></a>
+#[cfg(unix)]
+const NVDEC_LIB: (&str, &str) = ("nvcuvid", "libnvcuvid.so");
+#[cfg(windows)]
+const NVDEC_LIB: (&str, &str) = ("nvcuvid", "nvcuvid.lib");
 
-// Taken from https://github.com/coreylowman/cudarc/blob/main/build.rs
-const CUDA_ROOT_ENV_VARS: [&str; 3] = ["CUDA_PATH", "CUDA_ROOT", "CUDA_TOOLKIT_ROOT_DIR"];
-const CUDA_ROOT_CANDIDATES: [&str; 6] = [
+/// Environment variables which might specify path to the libraries.
+///
+/// - <https://github.com/coreylowman/cudarc/blob/main/build.rs>
+/// - <https://github.com/rust-av/nvidia-video-codec-rs/blob/master/nvidia-video-codec-sys/build.rs>
+const ENVIRONMENT_VARIABLES: [&str; 5] = [
+    "CUDA_PATH",
+    "CUDA_ROOT",
+    "CUDA_TOOLKIT_ROOT_DIR",
+    "NVIDIA_VIDEO_CODEC_SDK_PATH",
+    "NVIDIA_VIDEO_CODEC_INCLUDE_PATH",
+];
+
+/// Candidate paths which do not require an environment variable.
+///
+/// - <https://github.com/coreylowman/cudarc/blob/main/build.rs>
+/// - <https://github.com/ViliamVadocz/nvidia-video-codec-sdk/issues/13>
+const ROOT_CANDIDATES: [&str; 7] = [
     "/usr",
     "/usr/local/cuda",
     "/opt/cuda",
     "/usr/lib/cuda",
     "C:/Program Files/NVIDIA GPU Computing Toolkit",
     "C:/CUDA",
+    "/usr/include/nvidia-sdk",
 ];
-const LIBRARY_CANDIDATES: [&str; 10] = [
+
+const LIBRARY_CANDIDATES: [&str; 11] = [
+    "",
     "lib",
     "lib/x64",
     "lib/Win32",
@@ -40,62 +60,43 @@ fn main() {
         return;
     }
     rerun_if_changed();
-    let cuda_root = find_cuda_root()
-        .canonicalize()
-        .expect("Could not canonicalize path.");
 
-    println!("cargo:rustc-link-lib={NVENC_LIB}");
-    println!("cargo:rustc-link-lib={NVDEC_LIB}");
+    // Link to libraries.
+    println!("cargo:rustc-link-lib={}", NVENC_LIB.0);
+    println!("cargo:rustc-link-lib={}", NVDEC_LIB.0);
 
-    for path in lib_candidates(cuda_root) {
-        println!("cargo:rustc-link-search={}", path.display());
+    // Add the first found candidate location to link search.
+    match library_candidates().next() {
+        Some(path) => println!("cargo:rustc-link-search={}", path.display()),
+        None => panic!(
+            "Could not find NVIDIA Video Codec SDK libraries.\nPlace the libraries where you have \
+             your CUDA installation, or set `NVIDIA_VIDEO_CODEC_SDK_PATH` to the root directory \
+             of your installation so that `$NVIDIA_VIDEO_CODEC_SDK_PATH/lib/{}` and \
+             `$NVIDIA_VIDEO_CODEC_SDK_PATH/lib/{}` are valid paths to the library files.",
+            NVENC_LIB.1, NVDEC_LIB.1
+        ),
     }
 }
 
+/// Rerun the build script if any of the listed environment variables changes.
 fn rerun_if_changed() {
-    for var in CUDA_ROOT_ENV_VARS {
+    for var in ENVIRONMENT_VARIABLES {
         println!("cargo:rerun-if-env-changed={var}");
     }
-    println!("cargo:rerun-if-changed=wrapper.h",);
 }
 
-fn cuda_root_candidates() -> impl Iterator<Item = PathBuf> {
-    let env_vars = CUDA_ROOT_ENV_VARS
+/// Look for directories which contain the library files.
+fn library_candidates() -> impl Iterator<Item = PathBuf> {
+    ENVIRONMENT_VARIABLES
         .into_iter()
         .map(std::env::var)
-        .filter_map(Result::ok);
-    let roots = CUDA_ROOT_CANDIDATES.into_iter().map(Into::into);
-    env_vars.chain(roots).map(Into::<PathBuf>::into)
-}
-
-fn lib_candidates(root: PathBuf) -> impl Iterator<Item = PathBuf> {
-    LIBRARY_CANDIDATES
-        .into_iter()
-        .map(move |p| root.join(p))
-        .filter(|p| p.is_dir())
-}
-
-/// We expect both `cuda.h` and all the NVIDIA Video Codec SDK headers to be in
-/// the same place.
-fn find_cuda_root() -> PathBuf {
-    let root = cuda_root_candidates()
-        .find(|path| path.join("include").join("cuda.h").is_file())
-        .unwrap_or_else(|| {
-            panic!(
-                "Could not find the CUDA header file `cuda.h`.\nTry setting `CUDA_PATH` so that \
-                 the header is located at `$CUDA_PATH/include/cuda.h`.\n"
-            )
-        });
-    assert!(
-        {
-            let include = root.join("include");
-            include.join("cuviddec.h").is_file()
-                && include.join("nvcuvid.h").is_file()
-                && include.join("nvEncodeAPI.h").is_file()
-        },
-        "Could not find the required NVIDIA Video Codec SDK headers.\nPlace the headers at the \
-         same location as your CUDA headers.\nThat means the headers are at located at \
-         `$CUDA_PATH/include/`."
-    );
-    root
+        .filter_map(Result::ok)
+        .chain(ROOT_CANDIDATES.into_iter().map(Into::into))
+        .flat_map(|root| {
+            let root = PathBuf::from(root);
+            LIBRARY_CANDIDATES
+                .into_iter()
+                .map(move |lib_path| root.join(lib_path))
+                .filter(|path| path.join(NVENC_LIB.1).is_file() && path.join(NVDEC_LIB.1).is_file())
+        })
 }
