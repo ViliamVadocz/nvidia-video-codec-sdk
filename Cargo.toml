@@ -1,6 +1,6 @@
 [package]
 name = "nvidia-video-codec-sdk"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 rust-version = "1.70"
@@ -18,7 +18,7 @@ cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 features = ["ci-check"]
 
 [dependencies]
-cudarc = "0.9.10"
+cudarc = "0.9.14"
 lazy_static = "1.4.0"
 
 [dev-dependencies]

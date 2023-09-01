@@ -256,14 +256,18 @@ impl Default for EncodePictureParams {
 /// Codec specific picture parameters
 #[allow(missing_debug_implementations)] // NV_ENC_PIC_PARAMS_H264 contains a union, thus doesn't derive Debug
 pub enum CodecPictureParams {
+    /// Parameters for H.264
     H264(NV_ENC_PIC_PARAMS_H264),
+    /// Parameters for HEVC or H.265
     Hevc(NV_ENC_PIC_PARAMS_HEVC),
+    /// Parameters for AV1
     Av1(NV_ENC_PIC_PARAMS_AV1),
 }
 
 impl CodecPictureParams {
     /// Returns the GUID representing the codec for which the parameters are
     /// specified.
+    #[must_use]
     pub fn get_codec_guid(&self) -> GUID {
         match self {
             CodecPictureParams::H264(_) => NV_ENC_CODEC_H264_GUID,

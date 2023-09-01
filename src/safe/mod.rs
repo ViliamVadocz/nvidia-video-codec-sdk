@@ -22,4 +22,4 @@ pub use buffer::{
 };
 pub use encoder::Encoder;
 pub use result::{EncodeError, ErrorKind};
-pub use session::{EncodePictureParams, Session};
+pub use session::{CodecPictureParams, EncodePictureParams, Session};
