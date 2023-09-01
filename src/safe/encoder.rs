@@ -109,7 +109,7 @@ impl Encoder {
             err?;
         };
 
-        Ok(Encoder {
+        Ok(Self {
             ptr: encoder,
             _device: cuda_device,
         })

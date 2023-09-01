@@ -270,9 +270,9 @@ impl CodecPictureParams {
     #[must_use]
     pub fn get_codec_guid(&self) -> GUID {
         match self {
-            CodecPictureParams::H264(_) => NV_ENC_CODEC_H264_GUID,
-            CodecPictureParams::Hevc(_) => NV_ENC_CODEC_HEVC_GUID,
-            CodecPictureParams::Av1(_) => NV_ENC_CODEC_AV1_GUID,
+            Self::H264(_) => NV_ENC_CODEC_H264_GUID,
+            Self::Hevc(_) => NV_ENC_CODEC_HEVC_GUID,
+            Self::Av1(_) => NV_ENC_CODEC_AV1_GUID,
         }
     }
 }

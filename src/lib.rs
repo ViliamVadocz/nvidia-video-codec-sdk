@@ -26,11 +26,14 @@
 //!
 //! There is no safe wrapper yet.
 
-#![warn(missing_docs)]
-#![warn(clippy::pedantic)]
-#![warn(clippy::unwrap_used)]
-#![warn(missing_debug_implementations)]
-#![warn(missing_copy_implementations)]
+#![warn(
+    missing_docs,
+    clippy::pedantic,
+    clippy::style,
+    clippy::unwrap_used,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
 
 pub mod safe;
 pub mod sys;
