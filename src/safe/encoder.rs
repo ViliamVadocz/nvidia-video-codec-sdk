@@ -352,12 +352,10 @@ impl Encoder {
     /// # Examples
     ///
     /// ```
-    /// # #![allow(deprecated)]
     /// # use cudarc::driver::CudaDevice;
     /// # use nvidia_video_codec_sdk::{
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_PRESET_LOW_LATENCY_HQ_GUID,
     /// #         NV_ENC_PRESET_P1_GUID,
     /// #         NV_ENC_TUNING_INFO,
     /// #     },
@@ -366,17 +364,17 @@ impl Encoder {
     /// # let cuda_device = CudaDevice::new(0).unwrap();
     /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
     ///
-    /// //* Check if H.264 encoding and the low latency preset are supported. *//
+    /// //* Check if H.264 encoding and the P1 preset (highest performance) are supported. *//
     /// # let encode_guids = encoder.get_encode_guids().unwrap();
     /// # assert!(encode_guids.contains(&NV_ENC_CODEC_H264_GUID));
     /// # let preset_guids = encoder.get_preset_guids(NV_ENC_CODEC_H264_GUID).unwrap();
-    /// # assert!(preset_guids.contains(&NV_ENC_PRESET_LOW_LATENCY_HQ_GUID));
+    /// # assert!(preset_guids.contains(&NV_ENC_PRESET_P1_GUID));
     ///
     /// // Create the preset config.
     /// let _preset_config = encoder
     ///     .get_preset_config(
     ///         NV_ENC_CODEC_H264_GUID,
-    ///         NV_ENC_PRESET_LOW_LATENCY_HQ_GUID,
+    ///         NV_ENC_PRESET_P1_GUID,
     ///         NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY,
     ///     )
     ///     .unwrap();
@@ -430,7 +428,6 @@ impl Encoder {
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
     /// #         NV_ENC_CODEC_H264_GUID,
     /// #         NV_ENC_INITIALIZE_PARAMS,
-    /// #         NV_ENC_PRESET_LOW_LATENCY_HP_GUID,
     /// #     },
     /// #     Encoder,
     /// # };

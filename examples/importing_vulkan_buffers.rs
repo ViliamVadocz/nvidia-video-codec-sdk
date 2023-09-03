@@ -5,14 +5,13 @@ use std::{
 };
 
 use cudarc::driver::CudaDevice;
-#[allow(deprecated)]
-use nvidia_video_codec_sdk::sys::nvEncodeAPI::NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
 use nvidia_video_codec_sdk::{
     sys::nvEncodeAPI::{
         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
         NV_ENC_CODEC_H264_GUID,
         NV_ENC_H264_PROFILE_HIGH_GUID,
         NV_ENC_INITIALIZE_PARAMS,
+        NV_ENC_PRESET_P1_GUID,
         NV_ENC_TUNING_INFO,
     },
     Encoder,
@@ -164,8 +163,7 @@ fn main() {
     let preset_guids = encoder
         .get_preset_guids(encode_guid)
         .expect("The encoder should have a preset for H.264.");
-    #[allow(deprecated)]
-    let preset_guid = NV_ENC_PRESET_LOW_LATENCY_HP_GUID;
+    let preset_guid = NV_ENC_PRESET_P1_GUID;
     assert!(preset_guids.contains(&preset_guid));
 
     // Get available profiles based on encode guid.
