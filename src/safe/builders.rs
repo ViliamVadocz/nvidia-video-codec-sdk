@@ -21,6 +21,7 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_REGISTER_RESOURCE_VER,
 };
 
+#[deprecated(note = "use the safe wrapper `EncoderInitParams`")]
 impl NV_ENC_INITIALIZE_PARAMS {
     /// Builder for [`NV_ENC_INITIALIZE_PARAMS`].
     #[must_use]
