@@ -20,6 +20,6 @@ pub use buffer::{
     EncoderOutput,
     RegisteredResource,
 };
-pub use encoder::Encoder;
+pub use encoder::{Encoder, EncoderInitParams};
 pub use result::{EncodeError, ErrorKind};
 pub use session::{CodecPictureParams, EncodePictureParams, Session};
