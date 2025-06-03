@@ -17,6 +17,7 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_CONFIG_VER,
     NV_ENC_DEVICE_TYPE,
     NV_ENC_INITIALIZE_PARAMS,
+    NV_ENC_INITIALIZE_PARAMS_VER,
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS,
     NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS_VER,
     NV_ENC_PRESET_CONFIG,
@@ -473,12 +474,19 @@ pub struct EncoderInitParams<'a> {
 }
 
 impl<'a> EncoderInitParams<'a> {
-    /// Create a new builder for [`EncoderInitParam`], which is a wrapper for
+    /// Create a new builder for [`EncoderInitParams`], which is a wrapper for
     /// [`NV_ENC_INITIALIZE_PARAMS`].
     #[must_use]
     pub fn new(encode_guid: GUID, width: u32, height: u32) -> Self {
+        let param = NV_ENC_INITIALIZE_PARAMS {
+            version: NV_ENC_INITIALIZE_PARAMS_VER,
+            encodeGUID: encode_guid,
+            encodeWidth: width,
+            encodeHeight: height,
+            ..Default::default()
+        };
         Self {
-            param: NV_ENC_INITIALIZE_PARAMS::new(encode_guid, width, height),
+            param,
             marker: std::marker::PhantomData,
         }
     }
@@ -490,8 +498,8 @@ impl<'a> EncoderInitParams<'a> {
         self
     }
 
-    /// Tuning Info of NVENC encoding(TuningInfo is not applicable to H264 and
-    /// HEVC meonly mode).
+    /// Tuning Info of NVENC encoding(`tuning_info` is not applicable to H264
+    /// and HEVC meonly mode).
     pub fn tuning_info(&mut self, tuning_info: NV_ENC_TUNING_INFO) -> &mut Self {
         self.param.tuningInfo = tuning_info;
         self
@@ -499,7 +507,7 @@ impl<'a> EncoderInitParams<'a> {
 
     /// Specifies the advanced codec specific structure. If client has sent a
     /// valid codec config structure, it will override parameters set by the
-    /// [`EncoderInitParam::preset_guid`].
+    /// [`EncoderInitParams::preset_guid`].
     ///
     /// The client can query the interface for codec-specific parameters
     /// using [`Encoder::get_preset_config`](super::encoder::Encoder::get_preset_config).
