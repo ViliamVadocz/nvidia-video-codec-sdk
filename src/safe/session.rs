@@ -56,9 +56,8 @@ impl Session {
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
     /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_INITIALIZE_PARAMS,
     /// #     },
-    /// #     Encoder,
+    /// #     Encoder, EncoderInitParams
     /// # };
     /// //* Create encoder. *//
     /// # let cuda_device = CudaDevice::new(0).unwrap();
@@ -72,7 +71,7 @@ impl Session {
     /// let session = encoder
     ///     .start_session(
     ///         NV_ENC_BUFFER_FORMAT_ARGB,
-    ///         NV_ENC_INITIALIZE_PARAMS::new(encode_guid, 1920, 1080),
+    ///         EncoderInitParams::new(encode_guid, 1920, 1080),
     ///     )
     ///     .unwrap();
     /// // We can still use the encoder like this:
@@ -117,11 +116,10 @@ impl Session {
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
     /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_INITIALIZE_PARAMS,
     /// #         NV_ENC_PIC_PARAMS,
     /// #         NV_ENC_PIC_STRUCT,
     /// #     },
-    /// #     Encoder,
+    /// #     Encoder, EncoderInitParams,
     /// #     EncodePictureParams
     /// # };
     /// # const WIDTH: u32 = 1920;
@@ -140,7 +138,7 @@ impl Session {
     /// # assert!(input_formats.contains(&buffer_format));
     ///
     /// // Begin encoder session.
-    /// let mut initialize_params = NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT);
+    /// let mut initialize_params = EncoderInitParams::new(encode_guid, WIDTH, HEIGHT);
     /// initialize_params.display_aspect_ratio(16, 9)
     ///     .framerate(30, 1)
     ///     .enable_picture_type_decision();

@@ -58,11 +58,10 @@ impl Session {
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
     /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_INITIALIZE_PARAMS,
     /// #         NV_ENC_PIC_PARAMS,
     /// #         NV_ENC_PIC_STRUCT,
     /// #     },
-    /// #     Encoder,
+    /// #     Encoder, EncoderInitParams
     /// # };
     /// # const WIDTH: u32 = 1920;
     /// # const HEIGHT: u32 = 1080;
@@ -79,7 +78,7 @@ impl Session {
     /// # assert!(input_formats.contains(&buffer_format));
     ///
     /// //* Begin encoder session. *//
-    /// # let mut initialize_params = NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT);
+    /// # let mut initialize_params = EncoderInitParams::new(encode_guid, WIDTH, HEIGHT);
     /// # initialize_params.display_aspect_ratio(16, 9)
     /// #     .framerate(30, 1)
     /// #     .enable_picture_type_decision();
@@ -129,11 +128,10 @@ impl Session {
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
     /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_INITIALIZE_PARAMS,
     /// #         NV_ENC_PIC_PARAMS,
     /// #         NV_ENC_PIC_STRUCT,
     /// #     },
-    /// #     Encoder,
+    /// #     Encoder, EncoderInitParams
     /// # };
     /// # const WIDTH: u32 = 1920;
     /// # const HEIGHT: u32 = 1080;
@@ -150,7 +148,7 @@ impl Session {
     /// # assert!(input_formats.contains(&buffer_format));
     ///
     /// //* Begin encoder session. *//
-    /// # let mut initialize_params = NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT);
+    /// # let mut initialize_params = EncoderInitParams::new(encode_guid, WIDTH, HEIGHT);
     /// # initialize_params.display_aspect_ratio(16, 9)
     /// #     .framerate(30, 1)
     /// #     .enable_picture_type_decision();
@@ -304,11 +302,10 @@ impl<'a> Buffer<'a> {
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
     /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_INITIALIZE_PARAMS,
     /// #         NV_ENC_PIC_PARAMS,
     /// #         NV_ENC_PIC_STRUCT,
     /// #     },
-    /// #     Encoder,
+    /// #     Encoder, EncoderInitParams
     /// # };
     /// # const WIDTH: u32 = 1920;
     /// # const HEIGHT: u32 = 1080;
@@ -324,7 +321,7 @@ impl<'a> Buffer<'a> {
     /// # let input_formats = encoder.get_supported_input_formats(encode_guid).unwrap();
     /// # assert!(input_formats.contains(&buffer_format));
     /// //* Begin encoder session. *//
-    /// # let mut initialize_params = NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT);
+    /// # let mut initialize_params = EncoderInitParams::new(encode_guid, WIDTH, HEIGHT);
     /// # initialize_params.display_aspect_ratio(16, 9)
     /// #     .framerate(30, 1)
     /// #     .enable_picture_type_decision();

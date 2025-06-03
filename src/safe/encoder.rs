@@ -427,9 +427,8 @@ impl Encoder {
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
     /// #         NV_ENC_CODEC_H264_GUID,
-    /// #         NV_ENC_INITIALIZE_PARAMS,
     /// #     },
-    /// #     Encoder,
+    /// #     Encoder, EncoderInitParams
     /// # };
     /// # let cuda_device = CudaDevice::new(0).unwrap();
     /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
@@ -442,19 +441,19 @@ impl Encoder {
     /// let _session = encoder
     ///     .start_session(
     ///         NV_ENC_BUFFER_FORMAT_ARGB,
-    ///         NV_ENC_INITIALIZE_PARAMS::new(NV_ENC_CODEC_H264_GUID, 1920, 1080),
+    ///         EncoderInitParams::new(NV_ENC_CODEC_H264_GUID, 1920, 1080),
     ///     )
     ///     .unwrap();
     /// ```
     pub fn start_session(
         self,
         buffer_format: NV_ENC_BUFFER_FORMAT,
-        mut initialize_params: NV_ENC_INITIALIZE_PARAMS,
+        mut initialize_params: EncoderInitParams<'_>,
     ) -> Result<Session, EncodeError> {
+        let initialize_params = &mut initialize_params.param;
         let width = initialize_params.encodeWidth;
         let height = initialize_params.encodeHeight;
-        unsafe { (ENCODE_API.initialize_encoder)(self.ptr, &mut initialize_params) }
-            .result(&self)?;
+        unsafe { (ENCODE_API.initialize_encoder)(self.ptr, initialize_params) }.result(&self)?;
         Ok(Session {
             encoder: self,
             width,
@@ -462,5 +461,76 @@ impl Encoder {
             buffer_format,
             encode_guid: initialize_params.encodeGUID,
         })
+    }
+}
+
+/// A safe wrapper for [`NV_ENC_INITIALIZE_PARAMS`], which is the encoder
+/// initialize parameter.
+#[derive(Debug)]
+pub struct EncoderInitParams<'a> {
+    param: NV_ENC_INITIALIZE_PARAMS,
+    marker: std::marker::PhantomData<&'a mut NV_ENC_CONFIG>,
+}
+
+impl<'a> EncoderInitParams<'a> {
+    /// Create a new builder for [`EncoderInitParam`], which is a wrapper for
+    /// [`NV_ENC_INITIALIZE_PARAMS`].
+    pub fn new(encode_guid: GUID, width: u32, height: u32) -> Self {
+        Self {
+            param: NV_ENC_INITIALIZE_PARAMS::new(encode_guid, width, height),
+            marker: std::marker::PhantomData,
+        }
+    }
+
+    /// Specifies the preset for encoding. If the preset GUID is set then
+    /// the preset configuration will be applied before any other parameter.
+    pub fn preset_guid(&mut self, preset_guid: GUID) -> &mut Self {
+        self.param.presetGUID = preset_guid;
+        self
+    }
+
+    /// Tuning Info of NVENC encoding(TuningInfo is not applicable to H264 and
+    /// HEVC meonly mode).
+    pub fn tuning_info(&mut self, tuning_info: NV_ENC_TUNING_INFO) -> &mut Self {
+        self.param.tuningInfo = tuning_info;
+        self
+    }
+
+    /// Specifies the advanced codec specific structure. If client has sent a
+    /// valid codec config structure, it will override parameters set by the
+    /// [`EncoderInitParam::preset_guid`].
+    ///
+    /// The client can query the interface for codec-specific parameters
+    /// using [`Encoder::get_preset_config`](super::encoder::Encoder::get_preset_config).
+    /// It can then modify (if required) some of the codec config parameters and
+    /// send down a custom config structure using this method. Even in this
+    /// case the client is recommended to pass the same preset GUID it has
+    /// used to get the config.
+    pub fn encode_config(&mut self, encode_config: &'a mut NV_ENC_CONFIG) -> &mut Self {
+        self.param.encodeConfig = encode_config;
+        self
+    }
+
+    /// Specifies the display aspect ratio (H264/HEVC) or the render
+    /// width/height (AV1).
+    pub fn display_aspect_ratio(&mut self, width: u32, height: u32) -> &mut Self {
+        self.param.darWidth = width;
+        self.param.darHeight = height;
+        self
+    }
+
+    /// Specifies the framerate in frames per second as a fraction
+    /// `numerator / denominator`.
+    pub fn framerate(&mut self, numerator: u32, denominator: u32) -> &mut Self {
+        self.param.frameRateNum = numerator;
+        self.param.frameRateDen = denominator;
+        self
+    }
+
+    /// Enable the Picture Type Decision to be taken by the
+    /// `NvEncodeAPI` interface.
+    pub fn enable_picture_type_decision(&mut self) -> &mut Self {
+        self.param.enablePTD = 1;
+        self
     }
 }

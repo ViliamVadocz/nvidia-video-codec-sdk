@@ -10,14 +10,10 @@ use std::{
 
 use cudarc::driver::CudaDevice;
 use nvidia_video_codec_sdk::{
-    sys::nvEncodeAPI::{
-        GUID,
-        NV_ENC_BUFFER_FORMAT,
-        NV_ENC_CODEC_H264_GUID,
-        NV_ENC_INITIALIZE_PARAMS,
-    },
+    sys::nvEncodeAPI::{GUID, NV_ENC_BUFFER_FORMAT, NV_ENC_CODEC_H264_GUID},
     EncodeError,
     Encoder,
+    EncoderInitParams,
     ErrorKind,
 };
 
@@ -46,7 +42,7 @@ fn encode_blanks<P: AsRef<Path>>(
 
     // Initialize encoder.
     let encoder = Encoder::initialize_with_cuda(cuda_device)?;
-    let mut initialize_params = NV_ENC_INITIALIZE_PARAMS::new(ENCODE_GUID, WIDTH, HEIGHT);
+    let mut initialize_params = EncoderInitParams::new(ENCODE_GUID, WIDTH, HEIGHT);
     initialize_params
         .enable_picture_type_decision()
         .framerate(FRAMERATE, 1);

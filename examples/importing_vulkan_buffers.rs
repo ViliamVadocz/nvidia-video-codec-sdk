@@ -10,11 +10,11 @@ use nvidia_video_codec_sdk::{
         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
         NV_ENC_CODEC_H264_GUID,
         NV_ENC_H264_PROFILE_HIGH_GUID,
-        NV_ENC_INITIALIZE_PARAMS,
         NV_ENC_PRESET_P1_GUID,
         NV_ENC_TUNING_INFO,
     },
     Encoder,
+    EncoderInitParams,
 };
 use vulkano::{
     device::{
@@ -180,20 +180,20 @@ fn main() {
     let buffer_format = NV_ENC_BUFFER_FORMAT_ARGB;
     assert!(input_formats.contains(&buffer_format));
 
+    let tuning_info = NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY;
+
     // Get the preset config based on the selected encode guid (H.264), selected
     // preset (`LOW_LATENCY`), and tuning info (`ULTRA_LOW_LATENCY`).
     let mut preset_config = encoder
-        .get_preset_config(
-            encode_guid,
-            preset_guid,
-            NV_ENC_TUNING_INFO::NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY,
-        )
+        .get_preset_config(encode_guid, preset_guid, tuning_info)
         .expect("Encoder should be able to create config based on presets.");
 
     // Initialize a new encoder session based on the `preset_config`
     // we generated before.
-    let mut initialize_params = NV_ENC_INITIALIZE_PARAMS::new(encode_guid, WIDTH, HEIGHT);
+    let mut initialize_params = EncoderInitParams::new(encode_guid, WIDTH, HEIGHT);
     initialize_params
+        .preset_guid(preset_guid)
+        .tuning_info(tuning_info)
         .display_aspect_ratio(16, 9)
         .framerate(30, 1)
         .enable_picture_type_decision()
