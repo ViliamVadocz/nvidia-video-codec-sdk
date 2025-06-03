@@ -107,7 +107,7 @@ impl Encoder {
             // We are required to destroy the encoder if there was an error.
             unsafe { (ENCODE_API.destroy_encoder)(encoder) }.result_without_string()?;
             err?;
-        };
+        }
 
         Ok(Self {
             ptr: encoder,
@@ -475,6 +475,7 @@ pub struct EncoderInitParams<'a> {
 impl<'a> EncoderInitParams<'a> {
     /// Create a new builder for [`EncoderInitParam`], which is a wrapper for
     /// [`NV_ENC_INITIALIZE_PARAMS`].
+    #[must_use]
     pub fn new(encode_guid: GUID, width: u32, height: u32) -> Self {
         Self {
             param: NV_ENC_INITIALIZE_PARAMS::new(encode_guid, width, height),

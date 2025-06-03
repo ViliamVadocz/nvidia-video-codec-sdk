@@ -181,7 +181,7 @@ impl Session {
                 self.encode_guid,
                 "The provided codec specific params must match the codec used"
             );
-        };
+        }
         let mut encode_pic_params = NV_ENC_PIC_PARAMS {
             version: NV_ENC_PIC_PARAMS_VER,
             inputWidth: self.width,
