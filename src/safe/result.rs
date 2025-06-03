@@ -71,8 +71,8 @@ pub enum ErrorKind {
     /// same order in which it has called [`EncodeAPI.encode_picture`].
     NeedMoreInput = 17,
     /// The hardware encoder is busy encoding and is unable to encode
-    /// the input. The client should call [EncodeAPI.encode_picture] again after
-    /// few milliseconds.
+    /// the input. The client should call [`EncodeAPI.encode_picture`] again
+    /// after few milliseconds.
     EncoderBusy = 18,
     /// The completion event passed in [`EncodeAPI.encode_picture`]
     /// has not been registered with encoder driver using

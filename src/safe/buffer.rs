@@ -457,7 +457,7 @@ pub struct Bitstream<'a> {
 
 unsafe impl Send for Bitstream<'_> {}
 
-impl<'a> Bitstream<'a> {
+impl Bitstream<'_> {
     /// Lock the output bitstream.
     ///
     /// On a successful lock you get a [`BitstreamLock`] which can be used to

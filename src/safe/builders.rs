@@ -137,14 +137,14 @@ impl NV_ENC_REGISTER_RESOURCE {
     /// Set the input buffer pitch.
     ///
     /// - For [`NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_DIRECTX`]
-    /// resources, set this to 0.
+    ///   resources, set this to 0.
     /// - For [`NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR`]
-    /// resources, set this to the pitch as obtained from `cuMemAllocPitch()`,
-    /// or to the width in **bytes** (if this resource was created by using
-    /// `cuMemAlloc()`). This value must be a multiple of 4.
+    ///   resources, set this to the pitch as obtained from `cuMemAllocPitch()`,
+    ///   or to the width in **bytes** (if this resource was created by using
+    ///   `cuMemAlloc()`). This value must be a multiple of 4.
     /// - For [`NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_OPENGL_TEX`]
-    /// resources, set this to the texture width multiplied by the number of
-    /// components in the texture format.
+    ///   resources, set this to the texture width multiplied by the number of
+    ///   components in the texture format.
     #[must_use]
     pub fn pitch(mut self, pitch: u32) -> Self {
         self.pitch = pitch;
