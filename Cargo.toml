@@ -26,6 +26,6 @@ vulkano = "0.33.0"
 
 [features]
 default = []
-ci-check=[]
-#ci-check = ["cudarc/ci-check"]
+# workaround to make the ci similar to cudarc
+ci-check=["cudarc/cuda-12020", "cudarc/dynamic-loading"]
 

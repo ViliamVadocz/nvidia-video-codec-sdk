@@ -92,7 +92,7 @@ impl Session {
     ///     .create_input_buffer()
     ///     .unwrap();
     /// ```
-    pub fn create_input_buffer(&self) -> Result<Buffer, EncodeError> {
+    pub fn create_input_buffer(&self) -> Result<Buffer<'_>, EncodeError> {
         let mut create_input_buffer_params = NV_ENC_CREATE_INPUT_BUFFER {
             version: NV_ENC_CREATE_INPUT_BUFFER_VER,
             width: self.width,
@@ -162,7 +162,7 @@ impl Session {
     ///     .create_output_bitstream()
     ///     .unwrap();
     /// ```
-    pub fn create_output_bitstream(&self) -> Result<Bitstream, EncodeError> {
+    pub fn create_output_bitstream(&self) -> Result<Bitstream<'_>, EncodeError> {
         let mut create_bitstream_buffer_params = NV_ENC_CREATE_BITSTREAM_BUFFER {
             version: NV_ENC_CREATE_BITSTREAM_BUFFER_VER,
             bitstreamBuffer: ptr::null_mut(),
@@ -197,7 +197,7 @@ impl Session {
         &self,
         pitch: u32,
         mapped_buffer: MappedBuffer,
-    ) -> Result<RegisteredResource<MappedBuffer>, EncodeError> {
+    ) -> Result<RegisteredResource<'_, MappedBuffer>, EncodeError> {
         let stream = self.encoder.ctx.default_stream();
         let (device_ptr, _) = mapped_buffer.device_ptr(&stream);
         self.register_generic_resource(
@@ -228,7 +228,7 @@ impl Session {
         resource_type: NV_ENC_INPUT_RESOURCE_TYPE,
         resource_to_register: *mut c_void,
         pitch: u32,
-    ) -> Result<RegisteredResource<T>, EncodeError> {
+    ) -> Result<RegisteredResource<'_, T>, EncodeError> {
         // Register resource.
         let mut register_resource_params = NV_ENC_REGISTER_RESOURCE::new(
             resource_type,
@@ -473,7 +473,7 @@ impl Bitstream<'_> {
     /// # Errors
     ///
     /// Could error if we run out of memory.
-    pub fn lock(&mut self) -> Result<BitstreamLock, EncodeError> {
+    pub fn lock(&mut self) -> Result<BitstreamLock<'_, '_>, EncodeError> {
         self.lock_inner(true)
     }
 
@@ -490,11 +490,11 @@ impl Bitstream<'_> {
     /// An error with [`ErrorKind::LockBusy`](super::ErrorKind::LockBusy) could
     /// be returned if the lock is currently busy. This is a recoverable
     /// error and the client should retry in a few milliseconds.
-    pub fn try_lock(&mut self) -> Result<BitstreamLock, EncodeError> {
+    pub fn try_lock(&mut self) -> Result<BitstreamLock<'_, '_>, EncodeError> {
         self.lock_inner(false)
     }
 
-    fn lock_inner(&mut self, wait: bool) -> Result<BitstreamLock, EncodeError> {
+    fn lock_inner(&mut self, wait: bool) -> Result<BitstreamLock<'_, '_>, EncodeError> {
         // Lock bitstream.
         let mut lock_bitstream_buffer_params = NV_ENC_LOCK_BITSTREAM {
             version: NV_ENC_LOCK_BITSTREAM_VER,
