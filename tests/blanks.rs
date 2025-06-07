@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-use cudarc::driver::CudaDevice;
+use cudarc::driver::CudaContext;
 use nvidia_video_codec_sdk::{
     sys::nvEncodeAPI::{GUID, NV_ENC_BUFFER_FORMAT, NV_ENC_CODEC_H264_GUID},
     EncodeError,
@@ -18,7 +18,7 @@ use nvidia_video_codec_sdk::{
 };
 
 fn encode_blanks<P: AsRef<Path>>(
-    cuda_device: Arc<CudaDevice>,
+    cuda_ctx: Arc<CudaContext>,
     file_path: Option<P>,
 ) -> Result<(), EncodeError> {
     const FRAMES: usize = 128;
@@ -41,7 +41,7 @@ fn encode_blanks<P: AsRef<Path>>(
     });
 
     // Initialize encoder.
-    let encoder = Encoder::initialize_with_cuda(cuda_device)?;
+    let encoder = Encoder::initialize_with_cuda(cuda_ctx)?;
     let mut initialize_params = EncoderInitParams::new(ENCODE_GUID, WIDTH, HEIGHT);
     initialize_params
         .enable_picture_type_decision()
@@ -71,7 +71,7 @@ fn encode_blanks<P: AsRef<Path>>(
             .pop()
             .expect("There should be enough buffers.");
 
-        // Write a frame to tne input buffer.
+        // Write a frame to the input buffer.
         unsafe { input_buffer.lock()?.write(&FRAME) };
 
         // Encode the frame.
@@ -132,16 +132,20 @@ fn encode_blanks<P: AsRef<Path>>(
 
 #[test]
 fn encoder_works() {
-    encode_blanks::<&str>(CudaDevice::new(0).expect("CUDA should be installed."), None).unwrap();
+    encode_blanks::<&str>(
+        CudaContext::new(0).expect("CUDA should be installed."),
+        None,
+    )
+    .unwrap();
 }
 
 #[test]
 fn encode_in_parallel() {
     std::thread::scope(|scope| {
-        let cuda_device = CudaDevice::new(0).expect("CUDA should be installed.");
+        let cuda_ctx = CudaContext::new(0).expect("CUDA should be installed.");
         for _ in 0..4 {
-            let thread_cuda_device = cuda_device.clone();
-            scope.spawn(|| encode_blanks::<&str>(thread_cuda_device, None).unwrap());
+            let thread_cuda_ctx = cuda_ctx.clone();
+            scope.spawn(|| encode_blanks::<&str>(thread_cuda_ctx, None).unwrap());
         }
     });
 }

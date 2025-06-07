@@ -196,10 +196,10 @@ impl NVENCSTATUS {
     /// # Examples
     ///
     /// ```
-    /// # use cudarc::driver::CudaDevice;
+    /// # use cudarc::driver::CudaContext;
     /// # use nvidia_video_codec_sdk::{sys::nvEncodeAPI::GUID, EncodeError, Encoder, ErrorKind};
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
+    /// # let cuda_ctx = CudaContext::new(0).unwrap();
+    /// let encoder = Encoder::initialize_with_cuda(cuda_ctx).unwrap();
     /// // Cause an error by passing in an invalid GUID.
     /// // `Encoder::get_supported_input_formats()` uses `.result()` internally
     /// let error = encoder

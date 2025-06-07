@@ -53,7 +53,7 @@ impl Session {
     /// # Examples
     ///
     /// ```
-    /// # use cudarc::driver::CudaDevice;
+    /// # use cudarc::driver::CudaContext;
     /// # use nvidia_video_codec_sdk::{
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
@@ -66,8 +66,8 @@ impl Session {
     /// # const WIDTH: u32 = 1920;
     /// # const HEIGHT: u32 = 1080;
     /// //* Create encoder. *//
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// # let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
+    /// # let cuda_ctx = CudaContext::new(0).unwrap();
+    /// # let encoder = Encoder::initialize_with_cuda(cuda_ctx).unwrap();
     ///
     /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
     /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
@@ -123,7 +123,7 @@ impl Session {
     /// # Examples
     ///
     /// ```
-    /// # use cudarc::driver::CudaDevice;
+    /// # use cudarc::driver::CudaContext;
     /// # use nvidia_video_codec_sdk::{
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
@@ -136,8 +136,8 @@ impl Session {
     /// # const WIDTH: u32 = 1920;
     /// # const HEIGHT: u32 = 1080;
     /// //* Create encoder. *//
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// # let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
+    /// # let cuda_ctx = CudaContext::new(0).unwrap();
+    /// # let encoder = Encoder::initialize_with_cuda(cuda_ctx).unwrap();
     ///
     /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
     /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
@@ -198,7 +198,8 @@ impl Session {
         pitch: u32,
         mapped_buffer: MappedBuffer,
     ) -> Result<RegisteredResource<MappedBuffer>, EncodeError> {
-        let device_ptr = *mapped_buffer.device_ptr();
+        let stream = self.encoder.ctx.default_stream();
+        let (device_ptr, _) = mapped_buffer.device_ptr(&stream);
         self.register_generic_resource(
             mapped_buffer,
             NV_ENC_INPUT_RESOURCE_TYPE::NV_ENC_INPUT_RESOURCE_TYPE_CUDADEVICEPTR,
@@ -297,7 +298,7 @@ impl<'a> Buffer<'a> {
     /// # Examples
     ///
     /// ```
-    /// # use cudarc::driver::CudaDevice;
+    /// # use cudarc::driver::CudaContext;
     /// # use nvidia_video_codec_sdk::{
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
@@ -311,8 +312,8 @@ impl<'a> Buffer<'a> {
     /// # const HEIGHT: u32 = 1080;
     /// # const DATA_LEN: usize = (WIDTH * HEIGHT * 4) as usize;
     /// //* Create encoder. *//
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// # let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
+    /// # let cuda_ctx = CudaContext::new(0).unwrap();
+    /// # let encoder = Encoder::initialize_with_cuda(cuda_ctx).unwrap();
     /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
     /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
     /// # let encode_guids = encoder.get_encode_guids().unwrap();

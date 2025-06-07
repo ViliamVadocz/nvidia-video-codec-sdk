@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use cudarc::driver::CudaDevice;
+use cudarc::driver::CudaContext;
 use nvidia_video_codec_sdk::{
     sys::nvEncodeAPI::{
         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
@@ -146,10 +146,10 @@ fn main() {
 
     let (vulkan_device, memory_type_index) = initialize_vulkan();
 
-    // Create a new CudaDevice to interact with cuda.
-    let cuda_device = CudaDevice::new(0).expect("Cuda should be installed correctly.");
+    // Create a new CudaContext to interact with cuda.
+    let cuda_ctx = CudaContext::new(0).expect("Cuda should be installed correctly.");
 
-    let encoder = Encoder::initialize_with_cuda(cuda_device.clone())
+    let encoder = Encoder::initialize_with_cuda(cuda_ctx.clone())
         .expect("NVIDIA Video Codec SDK should be installed correctly.");
 
     // Get all encode guids supported by the GPU.
@@ -246,7 +246,7 @@ fn main() {
 
         // Import file descriptor using CUDA.
         let external_memory = unsafe {
-            cuda_device.import_external_memory(file_descriptor, (WIDTH * HEIGHT * 4) as u64)
+            cuda_ctx.import_external_memory(file_descriptor, (WIDTH * HEIGHT * 4) as u64)
         }
         .expect("File descriptor should be valid for importing.");
         let mapped_buffer = external_memory

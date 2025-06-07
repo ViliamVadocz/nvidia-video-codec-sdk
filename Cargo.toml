@@ -18,12 +18,14 @@ cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 features = ["ci-check"]
 
 [dependencies]
-cudarc = "0.9.14"
-lazy_static = "1.4.0"
+cudarc = { version = "0.16.4", features = ["cuda-version-from-build-system"] }
+lazy_static = "1.5.0"
 
 [dev-dependencies]
 vulkano = "0.33.0"
 
 [features]
 default = []
-ci-check = ["cudarc/ci-check"]
+ci-check=[]
+#ci-check = ["cudarc/ci-check"]
+

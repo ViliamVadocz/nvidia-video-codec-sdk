@@ -51,7 +51,7 @@ impl Session {
     /// # Examples
     ///
     /// ```
-    /// # use cudarc::driver::CudaDevice;
+    /// # use cudarc::driver::CudaContext;
     /// # use nvidia_video_codec_sdk::{
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
@@ -60,8 +60,8 @@ impl Session {
     /// #     Encoder, EncoderInitParams
     /// # };
     /// //* Create encoder. *//
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// # let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
+    /// # let cuda_ctx = CudaContext::new(0).unwrap();
+    /// # let encoder = Encoder::initialize_with_cuda(cuda_ctx).unwrap();
     ///
     /// //* Set `encode_guid` and check that H.264 encoding is supported. *//
     /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
@@ -111,7 +111,7 @@ impl Session {
     /// # Examples
     ///
     /// ```
-    /// # use cudarc::driver::CudaDevice;
+    /// # use cudarc::driver::CudaContext;
     /// # use nvidia_video_codec_sdk::{
     /// #     sys::nvEncodeAPI::{
     /// #         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
@@ -126,8 +126,8 @@ impl Session {
     /// # const HEIGHT: u32 = 1080;
     /// # const DATA_LEN: usize = (WIDTH * HEIGHT * 4) as usize;
     /// //* Create encoder. *//
-    /// # let cuda_device = CudaDevice::new(0).unwrap();
-    /// # let encoder = Encoder::initialize_with_cuda(cuda_device).unwrap();
+    /// # let cuda_ctx = CudaContext::new(0).unwrap();
+    /// # let encoder = Encoder::initialize_with_cuda(cuda_ctx).unwrap();
     ///
     /// //* Set `encode_guid` and `buffer_format`, and check that H.264 encoding and the ARGB format are supported. *//
     /// # let encode_guid = NV_ENC_CODEC_H264_GUID;
