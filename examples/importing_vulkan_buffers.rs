@@ -1,10 +1,12 @@
 use std::{
     fs::{File, OpenOptions},
     io::Write,
+    ptr::{self, NonNull},
     sync::Arc,
 };
 
 use cudarc::driver::CudaContext;
+use libc::munmap;
 use nvidia_video_codec_sdk::{
     sys::nvEncodeAPI::{
         NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB,
@@ -22,6 +24,7 @@ use vulkano::{
         Device,
         DeviceCreateInfo,
         DeviceExtensions,
+        DeviceFeatures,
         QueueCreateInfo,
     },
     instance::{Instance, InstanceCreateInfo},
@@ -29,8 +32,10 @@ use vulkano::{
         DeviceMemory,
         ExternalMemoryHandleType,
         ExternalMemoryHandleTypes,
-        MappedDeviceMemory,
+        MappedMemoryRange,
         MemoryAllocateInfo,
+        MemoryMapFlags,
+        MemoryMapInfo,
         MemoryPropertyFlags,
     },
     VulkanLibrary,
@@ -122,6 +127,10 @@ fn initialize_vulkan() -> (Arc<Device>, u32) {
         queue_create_infos: vec![QueueCreateInfo::default()],
         enabled_extensions: DeviceExtensions {
             khr_external_memory_fd: true,
+            ..Default::default()
+        },
+        enabled_features: DeviceFeatures {
+            memory_map_placed: true,
             ..Default::default()
         },
         ..Default::default()
@@ -307,7 +316,7 @@ fn create_buffer(
     let size = (width * height * 4) as u64;
 
     // Allocate memory with Vulkan.
-    let memory = DeviceMemory::allocate(vulkan_device, MemoryAllocateInfo {
+    let mut memory = DeviceMemory::allocate(vulkan_device, MemoryAllocateInfo {
         allocation_size: size,
         memory_type_index,
         export_handle_types: ExternalMemoryHandleTypes::OPAQUE_FD,
@@ -316,22 +325,61 @@ fn create_buffer(
     .expect("There should be space to allocate vulkan memory on the device");
 
     // Map and write to the memory.
-    let mapped_memory = MappedDeviceMemory::new(memory, 0..size)
-        .expect("There should be memory available to map and write to");
-    unsafe {
-        let content = mapped_memory
-            .write(0..size)
-            .expect("The physical device and memory type is HOST_VISIBLE");
-        generate_test_input(content, width, height, i, i_max);
-        mapped_memory.flush_range(0..size).expect(
-            "There should be no other devices writing to this memory and size should also fit \
-             within the size",
-        );
+    let address = unsafe {
+        libc::mmap(
+            ptr::null_mut(),
+            memory.allocation_size() as libc::size_t,
+            libc::PROT_READ | libc::PROT_WRITE,
+            libc::MAP_PRIVATE | libc::MAP_ANONYMOUS,
+            -1,
+            0,
+        )
+    };
+    if address as i64 == -1 {
+        panic!("There should be memory available to map and write to");
     }
 
+    unsafe {
+        memory.map_placed(
+            MemoryMapInfo {
+                flags: MemoryMapFlags::PLACED,
+                size: memory.allocation_size(),
+                ..Default::default()
+            },
+            NonNull::new(address).expect("The mapped address should not be null"),
+        )
+    }
+    .unwrap();
+
+    unsafe {
+        let content =
+            std::slice::from_raw_parts_mut(address as *mut u8, memory.allocation_size() as usize);
+        generate_test_input(content, width, height, i, i_max);
+        memory
+            .flush_range(MappedMemoryRange {
+                offset: 0,
+                size,
+                ..Default::default()
+            })
+            .expect(
+                "There should be no other devices writing to this memory and size should also fit \
+                 within the size",
+            );
+    }
+
+    // unmap from the host size
+    let result = unsafe { munmap(address, size as libc::size_t) };
+    if result == -1 {
+        panic!("munmap failed");
+    }
+
+    // unmap the device memory
+    memory
+        .unmap(Default::default())
+        .expect("unmap should be sucessful on host-mapped device");
+
     // Export the memory.
-    mapped_memory
-        .unmap()
+    memory
         .export_fd(ExternalMemoryHandleType::OpaqueFd)
         .expect("The memory should be able to be turned into a file handle if we are on UNIX")
 }
