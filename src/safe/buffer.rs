@@ -453,7 +453,7 @@ impl Drop for BufferLock<'_, '_> {
 /// The buffer is automatically destroyed when dropped.
 #[derive(Debug)]
 pub struct Bitstream<'a> {
-    pub(crate) ptr: *mut c_void,
+    pub ptr: *mut c_void,
     encoder: &'a Encoder,
 }
 
