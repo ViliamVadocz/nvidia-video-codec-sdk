@@ -277,9 +277,28 @@ pub struct Buffer<'a> {
     encoder: &'a Encoder,
 }
 
+
 unsafe impl Send for Buffer<'_> {}
 
 impl<'a> Buffer<'a> {
+    pub fn get_ptr(&self) ->  *mut c_void {
+        self.ptr
+    }
+
+    pub fn pitch(&self) -> u32 {
+        self.pitch
+    }
+
+    pub fn create(
+        ptr: *mut c_void,
+        pitch: u32,
+        encoder: &'a Encoder,
+    ) -> Self {
+        Self {
+            ptr, pitch, encoder
+        }
+    }
+
     /// Lock the input buffer.
     ///
     /// On a successful lock you get a [`BufferLock`] which can be used to write
