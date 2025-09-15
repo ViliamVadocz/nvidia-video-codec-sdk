@@ -559,13 +559,13 @@ impl EncoderOutput for Bitstream<'_> {
 /// it automatically unlocks the buffer then the lock goes out of scope.
 #[derive(Debug)]
 pub struct BitstreamLock<'a, 'b> {
-    bitstream: &'a Bitstream<'b>,
-    data: &'a [u8],
+    pub bitstream: &'a Bitstream<'b>,
+    pub data: &'a [u8],
     // statistics and other info
-    frame_index: u32,
-    timestamp: u64,
-    duration: u64,
-    picture_type: NV_ENC_PIC_TYPE,
+    pub frame_index: u32,
+    pub timestamp: u64,
+    pub duration: u64,
+    pub picture_type: NV_ENC_PIC_TYPE,
     // TODO: other fields
 }
 
