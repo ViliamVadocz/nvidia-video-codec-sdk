@@ -47,7 +47,7 @@ fn main() {
     }
     rerun_if_changed();
 
-    let temp_dir = PathBuf::from("./stubs");
+    let temp_dir = env::temp_dir();
     compile_library_stub("src/sys/stubs/nvcuvid.c",  NVDEC_LIB.1, temp_dir.to_str().unwrap());
     compile_library_stub("src/sys/stubs/nvEncodeAPI.c", NVENC_LIB.1, temp_dir.to_str().unwrap());
 
@@ -66,7 +66,6 @@ fn rerun_if_changed() {
 }
 
 pub fn find_cuda() -> PathBuf {
-    // 1️⃣ Check environment variables
     if let Ok(cuda_path) = env::var("CUDA_PATH") {
         let include_path = PathBuf::from(&cuda_path).join("include");
         if include_path.join("cuda.h").exists() {
@@ -81,7 +80,6 @@ pub fn find_cuda() -> PathBuf {
         }
     }
 
-    // 2️⃣ Fallback: search known root candidates
     for root in ROOT_CANDIDATES.iter() {
         let include_path = Path::new(root).join("include");
         if include_path.join("cuda.h").exists() {
