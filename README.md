@@ -14,7 +14,8 @@ Versions:
 
 ## Installation
 
-The build script will try to automatically locate your NVIDIA Video Codec SDK installation.
-You can help it by setting the environment variable `NVIDIA_VIDEO_CODEC_SDK_PATH` to the directory containing the library files. 
+Nvidia library stubs are used, dynamic linking at runtime.
+You should have these available for your dynamic loader to load:
+
 - `nvEncodeAPI.lib` and `nvcuvid.lib` on Windows,
 - `libnvidia-encode.so` and `libnvcuvid.so` on Linux.

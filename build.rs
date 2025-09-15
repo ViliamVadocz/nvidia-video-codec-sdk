@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{env, path::{Path, PathBuf}, process::Command};
 
 /// <a href="https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/
 /// nvenc-video-encoder-api-prog-guide/index.html#basic-encoding-flow"></a>
@@ -41,41 +41,21 @@ const ROOT_CANDIDATES: [&str; 7] = [
     "/usr/include/nvidia-sdk",
 ];
 
-const LIBRARY_CANDIDATES: [&str; 11] = [
-    "",
-    "lib",
-    "lib/x64",
-    "lib/Win32",
-    "lib/x86_64",
-    "lib/x86_64-linux-gnu",
-    "lib64",
-    "lib64/stubs",
-    "targets/x86_64-linux",
-    "targets/x86_64-linux/lib",
-    "targets/x86_64-linux/lib/stubs",
-];
-
 fn main() {
     if cfg!(feature = "ci-check") {
         return;
     }
     rerun_if_changed();
 
-    // Link to libraries.
-    println!("cargo:rustc-link-lib={}", NVENC_LIB.0);
-    println!("cargo:rustc-link-lib={}", NVDEC_LIB.0);
+    let temp_dir = PathBuf::from("./stubs");
+    compile_library_stub("src/sys/stubs/nvcuvid.c",  NVDEC_LIB.1, temp_dir.to_str().unwrap());
+    compile_library_stub("src/sys/stubs/nvEncodeAPI.c", NVENC_LIB.1, temp_dir.to_str().unwrap());
 
-    // Add the first found candidate location to link search.
-    match library_candidates().next() {
-        Some(path) => println!("cargo:rustc-link-search={}", path.display()),
-        None => panic!(
-            "Could not find NVIDIA Video Codec SDK libraries.\nPlace the libraries where you have \
-             your CUDA installation, or set `NVIDIA_VIDEO_CODEC_SDK_PATH` to the directory of \
-             your installation so that `$NVIDIA_VIDEO_CODEC_SDK_PATH/{}` and \
-             `$NVIDIA_VIDEO_CODEC_SDK_PATH/{}` are valid paths to the library files.",
-            NVENC_LIB.1, NVDEC_LIB.1
-        ),
-    }
+    println!("cargo:rustc-link-search=native={}", temp_dir.as_path().display());
+
+    // Link to libraries.
+    println!("cargo:rustc-link-lib=dylib={}", NVENC_LIB.0);
+    println!("cargo:rustc-link-lib=dylib={}", NVDEC_LIB.0);
 }
 
 /// Rerun the build script if any of the listed environment variables changes.
@@ -85,18 +65,77 @@ fn rerun_if_changed() {
     }
 }
 
-/// Look for directories which contain the library files.
-fn library_candidates() -> impl Iterator<Item = PathBuf> {
-    ENVIRONMENT_VARIABLES
-        .into_iter()
-        .map(std::env::var)
-        .filter_map(Result::ok)
-        .chain(ROOT_CANDIDATES.into_iter().map(Into::into))
-        .flat_map(|root| {
-            let root = PathBuf::from(root);
-            LIBRARY_CANDIDATES
-                .into_iter()
-                .map(move |lib_path| root.join(lib_path))
-                .filter(|path| path.join(NVENC_LIB.1).is_file() && path.join(NVDEC_LIB.1).is_file())
-        })
+pub fn find_cuda() -> PathBuf {
+    // 1️⃣ Check environment variables
+    if let Ok(cuda_path) = env::var("CUDA_PATH") {
+        let include_path = PathBuf::from(&cuda_path).join("include");
+        if include_path.join("cuda.h").exists() {
+            return include_path;
+        }
+    }
+
+    if let Ok(cuda_home) = env::var("CUDA_HOME") {
+        let include_path = PathBuf::from(&cuda_home).join("include");
+        if include_path.join("cuda.h").exists() {
+            return include_path;
+        }
+    }
+
+    // 2️⃣ Fallback: search known root candidates
+    for root in ROOT_CANDIDATES.iter() {
+        let include_path = Path::new(root).join("include");
+        if include_path.join("cuda.h").exists() {
+            return include_path;
+        }
+    }
+
+    panic!(
+        "Could not find CUDA include directory. Set CUDA_PATH or CUDA_HOME, or install CUDA in a standard location."
+    );
+}
+
+pub fn compile_library_stub(source: &str, library_name_exact: &str, out_dir: &str) {
+    let cuda_include_path = find_cuda();
+    
+    if !cuda_include_path.exists() {
+        panic!("CUDA include path does not exist: {}", cuda_include_path.display());
+    }
+    let out_dir = PathBuf::from(out_dir);
+
+    let lib_path = out_dir.join(library_name_exact);
+    
+    if cfg!(target_os = "windows") {
+        // Windows with MSVC
+        let status = Command::new("cl.exe")
+            .args(&[
+                "/nologo",
+                "/LD", // Build as DLL
+                "/W0", // No warnings
+                &format!("/Fe:{}", lib_path.display()),
+                &format!("/I{}", "src/sys/headers"),
+                &format!("/I{}", cuda_include_path.display()),
+                source,
+            ])
+            .status()
+            .expect("Failed to run cl.exe");
+        
+        assert!(status.success(), "Failed to compile DLL");
+    } else {
+        // Unix-like systems (Linux, macOS)
+        let status = Command::new("gcc")
+            .args(&[
+                "-shared",
+                "-fPIC",
+                "-o",
+                lib_path.to_str().unwrap(),
+                "-Isrc/sys/headers",
+                &format!("-I{}", cuda_include_path.display()),
+                "-w",
+                source,
+            ])
+            .status()
+            .expect("Failed to run gcc");
+        
+        assert!(status.success(), "Failed to compile shared library");
+    }
 }
