@@ -409,7 +409,7 @@ impl EncoderInput for Buffer<'_> {
 ///
 /// This type is created via [`Buffer::lock`] or [`Buffer::try_lock`].
 /// The purpose of this type is similar to [`std::sync::MutexGuard`] -
-/// it automatically unlocks the buffer then the lock goes out of scope.
+/// it automatically unlocks the buffer when the lock goes out of scope.
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct BufferLock<'a, 'b> {
@@ -541,7 +541,7 @@ impl EncoderOutput for Bitstream<'_> {
 ///
 /// This type is created via [`Bitstream::lock`] or [`Bitstream::try_lock`].
 /// The purpose of this type is similar to [`std::sync::MutexGuard`] -
-/// it automatically unlocks the buffer then the lock goes out of scope.
+/// it automatically unlocks the buffer when the lock goes out of scope.
 #[derive(Debug)]
 pub struct BitstreamLock<'a, 'b> {
     bitstream: &'a Bitstream<'b>,
