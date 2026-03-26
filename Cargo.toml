@@ -18,7 +18,7 @@ cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 features = ["ci-check"]
 
 [dependencies]
-cudarc = { version = "0.16.4", features = ["cuda-version-from-build-system"] }
+cudarc = { version = "0.19", features = ["cuda-version-from-build-system"] }
 lazy_static = "1.5.0"
 
 [dev-dependencies]
