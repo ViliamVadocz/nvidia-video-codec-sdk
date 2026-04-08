@@ -458,6 +458,43 @@ pub struct Bitstream<'a> {
 
 unsafe impl Send for Bitstream<'_> {}
 
+impl<'a> Bitstream<'a> {
+    /// Create a new [`Bitstream`] from a raw NVENC bitstream pointer.
+    ///
+    /// This constructor is intended for advanced use cases where the
+    /// bitstream buffer has already been allocated through the NVENC API
+    /// (e.g. by external code) and needs to be wrapped in a safe Rust
+    /// abstraction.
+    ///
+    /// The [`Bitstream`] does **not** take ownership of the memory; the
+    /// lifetime is tied to the provided [`Encoder`], and the caller is
+    /// responsible for ensuring that `ptr` remains valid for as long as
+    /// the [`Bitstream`] exists.
+    ///
+    /// # Safety
+    ///
+    /// The caller must guarantee that:
+    ///
+    /// - `ptr` is a valid pointer to an NVENC output bitstream buffer
+    ///   created for the given `encoder`.
+    /// - The buffer is not freed or invalidated while the [`Bitstream`]
+    ///   exists.
+    ///
+    /// Violating these conditions may result in undefined behavior.
+    ///
+    /// # Parameters
+    ///
+    /// - `ptr`: A raw pointer to an NVENC output bitstream buffer.
+    /// - `encoder`: The encoder that owns the buffer.
+    ///
+    /// # Returns
+    ///
+    /// A new [`Bitstream`] wrapping the raw pointer.
+    pub fn from_raw_ptr(ptr: *mut c_void, encoder: &'a Encoder) -> Self {
+        Self {ptr, encoder}
+    }
+}
+
 impl Bitstream<'_> {
     /// Lock the output bitstream.
     ///
@@ -475,6 +512,27 @@ impl Bitstream<'_> {
     /// Could error if we run out of memory.
     pub fn lock(&mut self) -> Result<BitstreamLock<'_, '_>, EncodeError> {
         self.lock_inner(true)
+    }
+
+    /// Get the raw pointer to the underlying NVENC output bitstream buffer.
+    /// 
+    /// This pointer is owned by the encoder and remains valid for the lifetime
+    /// of this [`Bitstream`] instance. You should generally use [`Bitstream::lock`]
+    /// or [`Bitstream::try_lock`] to safely access the encoded data; this method is
+    /// only intended for FFI or low-level interop scenarios where the raw NVENC
+    /// handle is required.
+    /// 
+    /// # Safety
+    /// 
+    /// Dereferencing this pointer is unsafe. The memory layout and validity
+    /// are determined by the NVENC API, and direct access should be avoided
+    /// unless you know what you’re doing.
+    /// 
+    /// # Returns
+    /// 
+    /// A raw pointer (`*mut c_void`) to the NVENC bitstream buffer.    
+    pub fn get_ptr_raw(&mut self) -> *mut c_void {
+        self.ptr
     }
 
     /// Non-blocking version of [`Bitstream::lock`]. See it for more info.
