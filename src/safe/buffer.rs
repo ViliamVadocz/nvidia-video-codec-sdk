@@ -105,9 +105,21 @@ impl Session {
             (ENCODE_API.create_input_buffer)(self.encoder.ptr, &mut create_input_buffer_params)
         }
         .result(&self.encoder)?;
+        let input_buffer = create_input_buffer_params.inputBuffer;
+        let mut lock_input_buffer_params = NV_ENC_LOCK_INPUT_BUFFER {
+            version: NV_ENC_LOCK_INPUT_BUFFER_VER,
+            inputBuffer: input_buffer,
+            ..Default::default()
+        };
+        unsafe { (ENCODE_API.lock_input_buffer)(self.encoder.ptr, &mut lock_input_buffer_params) }
+            .result(&self.encoder)?;
+        let pitch = lock_input_buffer_params.pitch;
+        unsafe { (ENCODE_API.unlock_input_buffer)(self.encoder.ptr, input_buffer) }
+            .result(&self.encoder)?;
+
         Ok(Buffer {
-            ptr: create_input_buffer_params.inputBuffer,
-            pitch: self.width,
+            ptr: input_buffer,
+            pitch,
             encoder: &self.encoder,
         })
     }

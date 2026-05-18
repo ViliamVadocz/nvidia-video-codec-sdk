@@ -13,6 +13,7 @@ use nvidia_video_codec_sdk::{
     sys::nvEncodeAPI::{GUID, NV_ENC_BUFFER_FORMAT, NV_ENC_CODEC_H264_GUID},
     EncodeError,
     Encoder,
+    EncoderInput,
     EncoderInitParams,
     ErrorKind,
 };
@@ -148,4 +149,31 @@ fn encode_in_parallel() {
             scope.spawn(|| encode_blanks::<&str>(thread_cuda_ctx, None).unwrap());
         }
     });
+}
+
+#[test]
+fn input_buffer_pitch_is_initialized_before_locking() {
+    const WIDTH: u32 = 1920;
+    const HEIGHT: u32 = 1080;
+    const BUFFER_FORMAT: NV_ENC_BUFFER_FORMAT = NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB;
+    const ENCODE_GUID: GUID = NV_ENC_CODEC_H264_GUID;
+
+    let cuda_ctx = CudaContext::new(0).expect("CUDA should be installed.");
+    let encoder = Encoder::initialize_with_cuda(cuda_ctx).unwrap();
+    let mut initialize_params = EncoderInitParams::new(ENCODE_GUID, WIDTH, HEIGHT);
+    initialize_params
+        .enable_picture_type_decision()
+        .framerate(30, 1);
+    let session = encoder
+        .start_session(BUFFER_FORMAT, initialize_params)
+        .unwrap();
+    let mut input_buffer = session.create_input_buffer().unwrap();
+
+    let pitch_before_lock = input_buffer.pitch();
+    {
+        let _lock = input_buffer.lock().unwrap();
+    }
+
+    assert_eq!(pitch_before_lock, input_buffer.pitch());
+    assert!(pitch_before_lock >= WIDTH * 4);
 }
