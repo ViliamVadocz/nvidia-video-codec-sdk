@@ -23,6 +23,8 @@ use crate::{
         NV_ENC_PIC_PARAMS_VER,
         NV_ENC_PIC_STRUCT,
         NV_ENC_PIC_TYPE,
+        NV_ENC_RECONFIGURE_PARAMS,
+        NV_ENC_RECONFIGURE_PARAMS_VER,
     },
     EncoderInput,
     EncoderOutput,
@@ -194,9 +196,31 @@ impl Session {
             inputTimeStamp: params.input_timestamp,
             codecPicParams: params.codec_params.map(Into::into).unwrap_or_default(),
             pictureType: params.picture_type,
+            // Per-frame pic flags (e.g. `NV_ENC_PIC_FLAG_FORCEIDR`), so a caller
+            // can force a keyframe without recreating the session.
+            encodePicFlags: params.encode_pic_flags,
             ..Default::default()
         };
         unsafe { (ENCODE_API.encode_picture)(self.encoder.ptr, &mut encode_pic_params) }
+            .result(&self.encoder)
+    }
+
+    /// Reconfigure the running encoder without recreating the session, e.g. to
+    /// change the target bitrate (`nvEncReconfigureEncoder`). `init` carries the
+    /// new parameters — typically the same builder used at
+    /// [`Encoder::start_session`](super::encoder::Encoder::start_session) with a
+    /// modified `encode_config`.
+    ///
+    /// # Errors
+    ///
+    /// Errors if the driver rejects the new configuration.
+    pub fn reconfigure(&self, init: &mut crate::EncoderInitParams) -> Result<(), EncodeError> {
+        let mut params = NV_ENC_RECONFIGURE_PARAMS {
+            version: NV_ENC_RECONFIGURE_PARAMS_VER,
+            reInitEncodeParams: *init.as_raw(),
+            ..Default::default()
+        };
+        unsafe { (ENCODE_API.reconfigure_encoder)(self.encoder.ptr, &mut params) }
             .result(&self.encoder)
     }
 
@@ -239,6 +263,10 @@ pub struct EncodePictureParams {
     pub picture_type: NV_ENC_PIC_TYPE,
     /// Codec-specific parameters
     pub codec_params: Option<CodecPictureParams>,
+    /// Per-frame `NV_ENC_PIC_FLAGS` bitmask, e.g. `NV_ENC_PIC_FLAG_FORCEIDR` to
+    /// force the frame to be an IDR, or `NV_ENC_PIC_FLAG_OUTPUT_SPSPPS` to repeat
+    /// the sequence/picture parameter sets in-band.
+    pub encode_pic_flags: u32,
 }
 
 impl Default for EncodePictureParams {
@@ -247,6 +275,7 @@ impl Default for EncodePictureParams {
             input_timestamp: 0,
             picture_type: NV_ENC_PIC_TYPE::NV_ENC_PIC_TYPE_UNKNOWN,
             codec_params: None,
+            encode_pic_flags: 0,
         }
     }
 }
