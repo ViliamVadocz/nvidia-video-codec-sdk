@@ -490,6 +490,13 @@ impl<'a> EncoderInitParams<'a> {
         }
     }
 
+    /// The underlying [`NV_ENC_INITIALIZE_PARAMS`], e.g. to pass to
+    /// [`Session::reconfigure`](super::session::Session::reconfigure).
+    #[must_use]
+    pub fn as_raw(&self) -> &NV_ENC_INITIALIZE_PARAMS {
+        &self.param
+    }
+
     /// Specifies the preset for encoding. If the preset GUID is set then
     /// the preset configuration will be applied before any other parameter.
     pub fn preset_guid(&mut self, preset_guid: GUID) -> &mut Self {
