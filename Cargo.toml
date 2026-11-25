@@ -20,6 +20,7 @@ features = ["ci-check"]
 [dependencies]
 cudarc = { version = "0.19", features = ["cuda-version-from-build-system"] }
 lazy_static = "1.5.0"
+libloading = { version = "0.8", optional = true }
 
 [dev-dependencies]
 vulkano = "0.35.0"
@@ -27,5 +28,10 @@ libc = "0.2"
 
 [features]
 default = []
+# Load libnvidia-encode at runtime instead of linking it at build time, so a binary built with
+# this crate starts on machines without the NVIDIA driver. Use `library_available` to find out
+# whether the library can be used before touching the encoder API. libnvcuvid is not linked
+# either, so the raw decoder bindings in `sys::nvcuvid` and `sys::cuviddec` can't be called.
+dynamic-loading = ["dep:libloading"]
 # workaround to make the ci similar to cudarc
 ci-check = ["cudarc/cuda-12020", "cudarc/dynamic-loading"]

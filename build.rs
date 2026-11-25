@@ -56,7 +56,9 @@ const LIBRARY_CANDIDATES: [&str; 11] = [
 ];
 
 fn main() {
-    if cfg!(feature = "ci-check") {
+    // dynamic-loading opens the libraries at runtime, so there is nothing to
+    // find or link.
+    if cfg!(feature = "ci-check") || cfg!(feature = "dynamic-loading") {
         return;
     }
     rerun_if_changed();

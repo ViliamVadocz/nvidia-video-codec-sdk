@@ -2,9 +2,11 @@
 
 use core::ffi::{c_int, c_void};
 
+#[cfg(feature = "dynamic-loading")]
+use self::loader::{NvEncodeAPICreateInstance, NvEncodeAPIGetMaxSupportedVersion};
+#[cfg(not(feature = "dynamic-loading"))]
+use crate::sys::nvEncodeAPI::{NvEncodeAPICreateInstance, NvEncodeAPIGetMaxSupportedVersion};
 use crate::sys::nvEncodeAPI::{
-    NvEncodeAPICreateInstance,
-    NvEncodeAPIGetMaxSupportedVersion,
     GUID,
     NVENCAPI_MAJOR_VERSION,
     NVENCAPI_MINOR_VERSION,
@@ -37,6 +39,126 @@ use crate::sys::nvEncodeAPI::{
     NV_ENC_STAT,
     NV_ENC_TUNING_INFO,
 };
+
+/// Checks that the NVENC library can be used, without panicking.
+///
+/// With the `dynamic-loading` feature this tries to open `libnvidia-encode`
+/// (once, the result is cached) and returns why it could not. Without it the
+/// library was linked at build time, so the answer is always `Ok`. Call this
+/// before the first use of [`ENCODE_API`] or [`Encoder`](crate::Encoder): they
+/// panic when the library is missing.
+///
+/// # Errors
+///
+/// Returns a description of the load failure when the library cannot be opened
+/// or lacks the entry points.
+pub fn library_available() -> Result<(), String> {
+    #[cfg(feature = "dynamic-loading")]
+    {
+        loader::get().map(|_| ()).map_err(str::to_owned)
+    }
+    #[cfg(not(feature = "dynamic-loading"))]
+    {
+        Ok(())
+    }
+}
+
+/// Opens `libnvidia-encode` at runtime and exposes its two exported entry
+/// points under the names the linked build uses, so the rest of this module is
+/// the same in both builds.
+#[cfg(feature = "dynamic-loading")]
+#[allow(non_snake_case, clippy::pedantic, missing_docs)]
+mod loader {
+    use std::sync::OnceLock;
+
+    use libloading::Library;
+
+    use crate::sys::nvEncodeAPI::{NVENCSTATUS, NV_ENCODE_API_FUNCTION_LIST};
+
+    #[cfg(unix)]
+    const CANDIDATES: &[&str] = &["libnvidia-encode.so.1", "libnvidia-encode.so"];
+    #[cfg(windows)]
+    const CANDIDATES: &[&str] = &["nvEncodeAPI64.dll", "nvEncodeAPI.dll"];
+
+    type CreateInstance = unsafe extern "C" fn(*mut NV_ENCODE_API_FUNCTION_LIST) -> NVENCSTATUS;
+    type MaxSupportedVersion = unsafe extern "C" fn(*mut u32) -> NVENCSTATUS;
+
+    pub struct Loaded {
+        // Kept so the function pointers below stay valid; never dropped (it
+        // lives in a static).
+        _library: Library,
+        create_instance: CreateInstance,
+        max_supported_version: MaxSupportedVersion,
+    }
+
+    static LOADED: OnceLock<Result<Loaded, String>> = OnceLock::new();
+
+    fn open() -> Result<Loaded, String> {
+        let mut last_error = String::new();
+        for name in CANDIDATES {
+            // SAFETY: opening the NVENC driver library only runs its
+            // initialisers, which is what linking against it would do at
+            // startup.
+            let library = match unsafe { Library::new(name) } {
+                Ok(library) => library,
+                Err(e) => {
+                    last_error = format!("{name}: {e}");
+                    continue;
+                }
+            };
+            // SAFETY: both symbols are the documented NVENC entry points with
+            // these signatures. The pointers are copied out of the Symbol and
+            // stay valid because `library` is stored beside them and never
+            // unloaded.
+            let (create_instance, max_supported_version) = unsafe {
+                let create = library
+                    .get::<CreateInstance>(b"NvEncodeAPICreateInstance\0")
+                    .map(|s| *s);
+                let version = library
+                    .get::<MaxSupportedVersion>(b"NvEncodeAPIGetMaxSupportedVersion\0")
+                    .map(|s| *s);
+                match (create, version) {
+                    (Ok(c), Ok(v)) => (c, v),
+                    (Err(e), _) | (_, Err(e)) => {
+                        last_error = format!("{name}: {e}");
+                        continue;
+                    }
+                }
+            };
+            return Ok(Loaded {
+                _library: library,
+                create_instance,
+                max_supported_version,
+            });
+        }
+        Err(format!("could not load the NVENC library ({last_error})"))
+    }
+
+    pub fn get() -> Result<&'static Loaded, &'static str> {
+        LOADED.get_or_init(open).as_ref().map_err(String::as_str)
+    }
+
+    /// # Safety
+    /// Same contract as the C function: `function_list` must point to a valid,
+    /// versioned list.
+    pub unsafe fn NvEncodeAPICreateInstance(
+        function_list: *mut NV_ENCODE_API_FUNCTION_LIST,
+    ) -> NVENCSTATUS {
+        match get() {
+            Ok(loaded) => (loaded.create_instance)(function_list),
+            Err(_) => NVENCSTATUS::NV_ENC_ERR_NO_ENCODE_DEVICE,
+        }
+    }
+
+    /// # Safety
+    /// Same contract as the C function: `version` must be valid for writes.
+    pub unsafe fn NvEncodeAPIGetMaxSupportedVersion(version: *mut u32) -> NVENCSTATUS {
+        match get() {
+            Ok(loaded) => (loaded.max_supported_version)(version),
+            Err(_) => NVENCSTATUS::NV_ENC_ERR_NO_ENCODE_DEVICE,
+        }
+    }
+}
 
 lazy_static! {
     /// A lazy static for the Encoder API.

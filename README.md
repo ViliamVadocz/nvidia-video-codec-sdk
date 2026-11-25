@@ -18,3 +18,9 @@ The build script will try to automatically locate your NVIDIA Video Codec SDK in
 You can help it by setting the environment variable `NVIDIA_VIDEO_CODEC_SDK_PATH` to the directory containing the library files. 
 - `nvEncodeAPI.lib` and `nvcuvid.lib` on Windows,
 - `libnvidia-encode.so` and `libnvcuvid.so` on Linux.
+
+With the `dynamic-loading` feature nothing is linked at build time, so the SDK libraries
+aren't needed to build. The encoder library is opened when it is first used, and
+`library_available` says whether it can be, so a program can start on a machine without the
+NVIDIA driver and fall back to another encoder. The raw NVDEC bindings in `sys` aren't usable
+with this feature.
