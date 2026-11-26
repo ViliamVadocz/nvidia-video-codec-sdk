@@ -230,7 +230,8 @@ impl Drop for Session {
 }
 
 /// Optional parameters for [`Session::encode_picture`].
-#[allow(missing_debug_implementations)] // CodecPictureParams doesn't implement Debug
+// CodecPictureParams doesn't implement Debug.
+#[allow(missing_debug_implementations)]
 pub struct EncodePictureParams {
     /// Opaque data used for identifying the corresponding encoded frame
     pub input_timestamp: u64,
@@ -252,7 +253,8 @@ impl Default for EncodePictureParams {
 }
 
 /// Codec specific picture parameters
-#[allow(missing_debug_implementations)] // NV_ENC_PIC_PARAMS_H264 contains a union, thus doesn't derive Debug
+// NV_ENC_PIC_PARAMS_H264 contains a union, so it doesn't derive Debug.
+#[allow(missing_debug_implementations)]
 pub enum CodecPictureParams {
     /// Parameters for H.264
     H264(NV_ENC_PIC_PARAMS_H264),

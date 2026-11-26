@@ -211,8 +211,8 @@ fn main() {
         .start_session(buffer_format, initialize_params)
         .expect("Encoder should be initialized correctly.");
 
-    // Calculate the number of buffers we need based on the interval of P frames and
-    // the look ahead depth.
+    // Calculate the number of buffers we need based on the interval of P frames
+    // and the look ahead depth.
     let num_bufs = usize::try_from(preset_config.presetCfg.frameIntervalP)
         .expect("frame intervalP should always be positive.")
         + usize::try_from(preset_config.presetCfg.rcParams.lookaheadDepth)

@@ -233,7 +233,8 @@ impl EncodeAPI {
         const MSG: &str = "The API instance should populate the whole function list.";
 
         // Check that the driver max supported version matches the version
-        // from the header files. If they do not match, the bindings should be updated.
+        // from the header files. If they do not match, the bindings should be
+        // updated.
         let mut version = 0;
         unsafe { NvEncodeAPIGetMaxSupportedVersion(&mut version) }
             .result_without_string()
