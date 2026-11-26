@@ -28,7 +28,8 @@ fn encode_blanks<P: AsRef<Path>>(
     const FRAMERATE: u32 = 30;
     const BUFFER_FORMAT: NV_ENC_BUFFER_FORMAT = NV_ENC_BUFFER_FORMAT::NV_ENC_BUFFER_FORMAT_ARGB;
     const ENCODE_GUID: GUID = NV_ENC_CODEC_H264_GUID;
-    // The size should be adjusted depending on the buffer format and pitch/stride.
+    // The size should be adjusted depending on the buffer format and
+    // pitch/stride.
     #[allow(clippy::large_stack_arrays)]
     const FRAME: [u8; (WIDTH * HEIGHT * 4) as usize] = [255; (WIDTH * HEIGHT * 4) as usize];
 
@@ -91,8 +92,8 @@ fn encode_blanks<P: AsRef<Path>>(
                     thread::sleep(Duration::from_millis(10));
                 }
                 Err(e) if e.kind() == ErrorKind::NeedMoreInput => {
-                    // Encoder needs more input; mark that these buffers are in-use
-                    // and skip to the next frame.
+                    // Encoder needs more input; mark that these buffers are
+                    // in-use and skip to the next frame.
                     in_use.push_back((input_buffer, output_bitstream));
                     continue 'next_frame;
                 }

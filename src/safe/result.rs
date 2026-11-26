@@ -226,7 +226,7 @@ impl NVENCSTATUS {
                         .to_string(),
                 ),
             }
-            .and_then(|s| if s.is_empty() { None } else { Some(s) });
+            .filter(|s| !s.is_empty());
             err
         })
     }
